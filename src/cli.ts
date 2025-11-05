@@ -515,18 +515,23 @@ interface CallArgsParseResult {
 }
 
 // parseCallArguments supports selectors, JSON payloads, and key=value args.
-function parseCallArguments(args: string[]): CallArgsParseResult {
+export function parseCallArguments(args: string[]): CallArgsParseResult {
   const result: CallArgsParseResult = { args: {}, tailLog: false };
+  const positional: string[] = [];
   let index = 0;
   while (index < args.length) {
     const token = args[index];
+    if (!token) {
+      index += 1;
+      continue;
+    }
     if (token === '--server' || token === '--mcp') {
       const value = args[index + 1];
       if (!value) {
         throw new Error(`Flag '${token}' requires a value.`);
       }
       result.server = value;
-      args.splice(index, 2);
+      index += 2;
       continue;
     }
     if (token === '--tool') {
@@ -535,7 +540,7 @@ function parseCallArguments(args: string[]): CallArgsParseResult {
         throw new Error(`Flag '${token}' requires a value.`);
       }
       result.tool = value;
-      args.splice(index, 2);
+      index += 2;
       continue;
     }
     if (token === '--args') {
@@ -552,26 +557,48 @@ function parseCallArguments(args: string[]): CallArgsParseResult {
       } catch (error) {
         throw new Error(`Unable to parse --args: ${(error as Error).message}`);
       }
-      args.splice(index, 2);
+      index += 2;
       continue;
     }
     if (token === '--tail-log') {
       result.tailLog = true;
-      args.splice(index, 1);
+      index += 1;
       continue;
     }
+    positional.push(token);
     index += 1;
   }
 
-  if (args.length > 0) {
-    result.selector = args.shift();
+  if (positional.length > 0) {
+    result.selector = positional.shift();
   }
-  for (const token of args) {
+
+  const nextPositional = positional[0];
+  if (!result.tool && nextPositional !== undefined && !nextPositional.includes('=')) {
+    result.tool = positional.shift();
+  }
+
+  for (const token of positional) {
     const [key, raw] = token.split('=', 2);
     if (!key || raw === undefined) {
       throw new Error(`Argument '${token}' must be key=value format.`);
     }
-    result.args[key] = coerceValue(raw);
+    const value = coerceValue(raw);
+    if (key === 'tool' && !result.tool) {
+      if (typeof value !== 'string') {
+        throw new Error("Argument 'tool' must be a string value.");
+      }
+      result.tool = value as string;
+      continue;
+    }
+    if (key === 'server' && !result.server) {
+      if (typeof value !== 'string') {
+        throw new Error("Argument 'server' must be a string value.");
+      }
+      result.server = value as string;
+      continue;
+    }
+    result.args[key] = value;
   }
   return result;
 }
