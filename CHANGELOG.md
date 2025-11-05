@@ -13,7 +13,7 @@
 - Generated CLIs now show full command signatures in help and support `--compile` without leaving template/bundle intermediates.
 - StdIO-backed MCP servers now receive resolved environment overrides, so API keys flow through to launched processes like `obsidian-mcp-server`.
 - Hardened the CLI generator to surface enum defaults/metadata and added regression tests around the new helper utilities.
-- `mcporter call` now accepts server + tool as positional arguments (or via `tool=` tokens) without dropping trailing key=value pairs, and surfaces parsing errors earlier.
+- Fixed `mcporter call <server> <tool>` so the second positional is treated as the tool name instead of triggering the "Argument must be key=value" error; positional and `tool=` selectors now play nicely with additional key=value payloads.
 
 ## [0.1.0]
 
