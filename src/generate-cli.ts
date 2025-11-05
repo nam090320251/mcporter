@@ -1,3 +1,4 @@
+import { execFile } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { build as esbuild } from "esbuild";
@@ -18,6 +19,8 @@ export interface GenerateCliOptions {
 	readonly runtime?: "node" | "bun";
 	readonly bundle?: boolean | string;
 	readonly timeoutMs?: number;
+	readonly minify?: boolean;
+	readonly compile?: boolean | string;
 }
 
 interface ResolvedServer {
@@ -41,7 +44,7 @@ interface GeneratedOption {
 
 export async function generateCli(
 	options: GenerateCliOptions,
-): Promise<{ outputPath: string; bundlePath?: string }> {
+): Promise<{ outputPath: string; bundlePath?: string; compilePath?: string }> {
 	const runtimeKind = options.runtime ?? "node";
 	const timeoutMs = options.timeoutMs ?? 30_000;
 	const { definition, name } = await resolveServerDefinition(
@@ -67,19 +70,35 @@ export async function generateCli(
 		generator,
 	});
 
+	const shouldBundle = Boolean(options.bundle ?? options.compile);
 	let bundlePath: string | undefined;
-	if (options.bundle) {
+	let compilePath: string | undefined;
+	if (shouldBundle) {
+		const targetPath =
+			typeof options.bundle === "string"
+				? options.bundle
+				: replaceExtension(outputPath, runtimeKind === "bun" ? "js" : "cjs");
 		bundlePath = await bundleOutput({
 			sourcePath: outputPath,
 			runtimeKind,
-			targetPath:
-				typeof options.bundle === "string"
-					? options.bundle
-					: replaceExtension(outputPath, runtimeKind === "bun" ? "js" : "cjs"),
+			targetPath,
+			minify: options.minify ?? false,
 		});
+
+		if (options.compile) {
+			if (runtimeKind !== "bun") {
+				throw new Error("--compile is only supported when --runtime bun");
+			}
+			const compileTarget =
+				typeof options.compile === "string"
+					? options.compile
+					: removeExtension(bundlePath);
+			await compileBundleWithBun(bundlePath, compileTarget);
+			compilePath = compileTarget;
+		}
 	}
 
-	return { outputPath, bundlePath };
+	return { outputPath, bundlePath, compilePath };
 }
 
 async function resolveServerDefinition(
@@ -689,10 +708,12 @@ async function bundleOutput({
 	sourcePath,
 	targetPath,
 	runtimeKind,
+	minify,
 }: {
 	sourcePath: string;
 	targetPath: string;
 	runtimeKind: "node" | "bun";
+	minify: boolean;
 }): Promise<string> {
 	const absTarget = path.resolve(targetPath);
 	await esbuild({
@@ -703,6 +724,7 @@ async function bundleOutput({
 		platform: "node",
 		format: runtimeKind === "bun" ? "esm" : "cjs",
 		target: "node20",
+		minify,
 		logLevel: "silent",
 	});
 	await fs.chmod(absTarget, 0o755);
@@ -713,4 +735,51 @@ function replaceExtension(file: string, extension: string): string {
 	const dirname = path.dirname(file);
 	const basename = path.basename(file, path.extname(file));
 	return path.join(dirname, `${basename}.${extension}`);
+}
+
+function removeExtension(file: string): string {
+	const parsed = path.parse(file);
+	return path.join(parsed.dir, parsed.name);
+}
+
+async function compileBundleWithBun(
+	bundlePath: string,
+	outputPath: string,
+): Promise<void> {
+	const bunBin = process.env.BUN_BIN ?? "bun";
+	await new Promise<void>((resolve, reject) => {
+		execFile(
+			bunBin,
+			["--version"],
+			{ cwd: process.cwd(), env: process.env },
+			(error) => {
+				if (error) {
+					reject(
+						new Error(
+							"Unable to locate Bun runtime. Install Bun or set BUN_BIN to the bun executable.",
+						),
+					);
+					return;
+				}
+				resolve();
+			},
+		);
+	});
+
+	await new Promise<void>((resolve, reject) => {
+		execFile(
+			bunBin,
+			["build", bundlePath, "--compile", "--outfile", outputPath],
+			{ cwd: process.cwd(), env: process.env },
+			(error) => {
+				if (error) {
+					reject(error);
+					return;
+				}
+				resolve();
+			},
+		);
+	});
+
+	await fs.chmod(outputPath, 0o755);
 }

@@ -69,16 +69,20 @@ interface GenerateFlags {
 	server: string;
 	output?: string;
 	bundle?: boolean | string;
+	compile?: boolean | string;
 	runtime: "node" | "bun";
 	timeout: number;
+	minify: boolean;
 }
 
 function parseGenerateFlags(args: string[]): GenerateFlags {
 	let server: string | undefined;
 	let output: string | undefined;
 	let bundle: boolean | string | undefined;
+	let compile: boolean | string | undefined;
 	let runtime: "node" | "bun" = "node";
 	let timeout = 30_000;
+	let minify = false;
 
 	let index = 0;
 	while (index < args.length) {
@@ -126,6 +130,22 @@ function parseGenerateFlags(args: string[]): GenerateFlags {
 			}
 			continue;
 		}
+		if (token === "--compile") {
+			const next = args[index + 1];
+			if (!next || next.startsWith("--")) {
+				compile = true;
+				args.splice(index, 1);
+			} else {
+				compile = next;
+				args.splice(index, 2);
+			}
+			continue;
+		}
+		if (token === "--minify") {
+			minify = true;
+			args.splice(index, 1);
+			continue;
+		}
 		throw new Error(`Unknown flag '${token}' for generate-cli.`);
 	}
 
@@ -133,7 +153,7 @@ function parseGenerateFlags(args: string[]): GenerateFlags {
 		throw new Error("--server flag is required for generate-cli.");
 	}
 
-	return { server, output, bundle, runtime, timeout };
+	return { server, output, bundle, compile, runtime, timeout, minify };
 }
 
 function expectValue(flag: string, value: string | undefined): string {
@@ -165,7 +185,7 @@ async function handleGenerateCli(
 	globalFlags: FlagMap,
 ): Promise<void> {
 	const parsed = parseGenerateFlags(args);
-	const { outputPath, bundlePath } = await generateCli({
+	const { outputPath, bundlePath, compilePath } = await generateCli({
 		serverRef: parsed.server,
 		configPath: globalFlags["--config"],
 		rootDir: globalFlags["--root"],
@@ -173,10 +193,15 @@ async function handleGenerateCli(
 		runtime: parsed.runtime,
 		bundle: parsed.bundle,
 		timeoutMs: parsed.timeout,
+		compile: parsed.compile,
+		minify: parsed.minify,
 	});
 	console.log(`Generated CLI at ${outputPath}`);
 	if (bundlePath) {
 		console.log(`Bundled executable created at ${bundlePath}`);
+	}
+	if (compilePath) {
+		console.log(`Compiled executable created at ${compilePath}`);
 	}
 }
 

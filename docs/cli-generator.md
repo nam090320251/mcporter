@@ -17,7 +17,7 @@ Create an `mcp-runtime generate-cli` command that produces a standalone CLI for 
 ## Steps
 1. **Command Scaffolding**
    - Add `generate-cli` subcommand to the existing CLI.
-   - Parse flags: `--server`, `--output`, `--runtime=node|bun`, `--format=ts|js`, `--bundle`, etc.
+   - Parse flags: `--server`, `--output`, `--runtime=node|bun`, `--bundle`, `--minify`, `--compile`, etc.
 2. **Server Resolution**
    - If `--server` matches a configured name (via `loadServerDefinitions`), use that server definition.
    - Otherwise, if the value looks like a file path, load a Cursor-style JSON definition from disk.
@@ -34,7 +34,8 @@ Create an `mcp-runtime generate-cli` command that produces a standalone CLI for 
      - Adds output-format handling.
    - Include `package.json` scaffolding if `--bundle` or `--package` is set.
 5. **Optional Bundling**
-   - If requested, run a bundler (e.g., `tsup`) to emit a single JS file with shebang.
+   - If requested, run esbuild to emit a single JS file with shebang (Node or Bun), with optional minification.
+   - When targeting Bun, allow `--compile` to delegate to `bun build --compile` and generate a self-contained binary.
    - Otherwise, leave as TypeScript/ESM and document how to run (`node path/to/cli.js` or `bun path/to/cli.ts`).
 6. **Testing**
    - Add generator unit tests (snapshot the emitted CLI for known schemas).
@@ -50,13 +51,11 @@ Create an `mcp-runtime generate-cli` command that produces a standalone CLI for 
 - Generated CLI embeds the resolved server definition yet honors `--config`/`--server` overrides at execution time.
 
 ## Status
-- ✅ `generate-cli` subcommand scaffolding implemented (core schema mapping, commander-based output).
+- ✅ `generate-cli` subcommand implemented with schema-aware proxy generation.
 - ✅ Inline JSON / file / shorthand server resolution wired up.
-- ✅ CLI generator writes TypeScript by default and supports optional bundling via esbuild.
-- ✅ New integration test (`tests/generate-cli.test.ts`) spins up a mock MCP server and validates the generated CLI end-to-end.
-- ⏳ Current blocker: bundled output still references helper functions outside scope (e.g., `normalizeEmbeddedServer`), causing runtime failures. Need to inline helper or avoid bundling until fixed.
+- ✅ Bundling via esbuild (Node or Bun) with optional minification and Bun bytecode compilation.
+- ✅ Integration tests cover bundling, minification, and compiled binaries against the mock MCP server.
 
 Next steps:
-1. Inline or export utility helpers so bundled output can execute without missing references (resolve `normalizeEmbeddedServer` error).
-2. Clean up esbuild configuration to produce consistent shebang and module format (node vs bun).
-3. Polish README/Docs to highlight `generate-cli` usage once bundling is stable.
+1. Add optional shell completion scaffolding if demand arises.
+2. Explore templated TypeScript definitions for generated CLIs to improve editor tooling.
