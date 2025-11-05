@@ -4,6 +4,8 @@ summary: 'Plan for the mcp-runtime package replacing the Sweetistics pnpm MCP he
 
 # mcp-runtime Roadmap
 
+> Inspired in part by Anthropic’s guidance on MCP code execution agents: https://www.anthropic.com/engineering/code-execution-with-mcp
+
 ## Goals
 - Provide a TypeScript runtime + CLI that exposes all MCP servers defined in `~/Projects/sweetistics/config/mcp_servers.json`.
 - Preserve current one-shot `pnpm mcp:call` ergonomics while enabling reusable connections for Bun/Node agents.
