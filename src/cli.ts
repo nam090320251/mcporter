@@ -72,6 +72,12 @@ function colorize(code: number, text: string): string {
 const dimText = (text: string): string => colorize(90, text);
 const yellowText = (text: string): string => colorize(33, text);
 const redText = (text: string): string => colorize(31, text);
+const extraDimText = (text: string): string => {
+  if (!supportsAnsiColor) {
+    return text;
+  }
+  return `\u001B[38;5;244m${text}\u001B[0m`;
+};
 
 // main parses CLI flags and dispatches to list/call commands.
 async function main(): Promise<void> {
@@ -770,13 +776,16 @@ export async function handleList(runtime: Awaited<ReturnType<typeof createRuntim
         completedCount += 1;
 
         if (spinnerActive && spinner) {
-          spinner.stopAndPersist({ symbol: '-', text: rendered.line });
+          spinner.stop();
+          console.log(rendered.line);
           const remaining = servers.length - completedCount;
           if (remaining > 0) {
             const latestSummary = truncateForSpinner(`${result.server.name} — ${rendered.summary}`);
             spinner.text = `Listing servers… ${completedCount}/${servers.length} · latest: ${latestSummary}`;
             spinner.start();
           }
+        } else {
+          console.log(rendered.line);
         }
 
         return result;
@@ -1126,7 +1135,7 @@ function formatSourceSuffix(source: ServerSource | undefined, inline = false): s
   }
   const formatted = formatPathForDisplay(source.path);
   const text = inline ? formatted : `[source: ${formatted}]`;
-  const tinted = dimText(text);
+  const tinted = extraDimText(text);
   return inline ? tinted : ` ${tinted}`;
 }
 

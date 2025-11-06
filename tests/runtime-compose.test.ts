@@ -21,6 +21,8 @@ const mocks = vi.hoisted(() => {
       }
     }
 
+    async close() {}
+
     async listTools(params: unknown) {
       return listToolsMock(params);
     }
@@ -55,6 +57,7 @@ const mocks = vi.hoisted(() => {
   }
 
   class MockStdioClientTransport {
+    public start = vi.fn(async () => {});
     public close = vi.fn(async () => {});
     constructor(public options: unknown) {
       stdioInstances.push(this);

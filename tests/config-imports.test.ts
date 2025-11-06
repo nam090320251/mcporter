@@ -20,6 +20,16 @@ beforeEach(() => {
   const targetCodex = path.join(fakeHome, '.codex', 'config.toml');
   fs.mkdirSync(path.dirname(targetCodex), { recursive: true });
   fs.copyFileSync(sourceCodex, targetCodex);
+
+  const sourceWindsurf = path.join(FIXTURE_ROOT, '.codeium', 'windsurf', 'mcp_config.json');
+  const targetWindsurf = path.join(fakeHome, '.codeium', 'windsurf', 'mcp_config.json');
+  fs.mkdirSync(path.dirname(targetWindsurf), { recursive: true });
+  fs.copyFileSync(sourceWindsurf, targetWindsurf);
+
+  const sourceVscode = path.join(FIXTURE_ROOT, 'Library', 'Application Support', 'Code', 'User', 'mcp.json');
+  const targetVscode = path.join(fakeHome, 'Library', 'Application Support', 'Code', 'User', 'mcp.json');
+  fs.mkdirSync(path.dirname(targetVscode), { recursive: true });
+  fs.copyFileSync(sourceVscode, targetVscode);
 });
 
 afterEach(() => {
@@ -38,7 +48,15 @@ describe('config imports', () => {
     });
 
     const names = servers.map((server) => server.name).sort();
-    expect(names).toEqual(['claude-only', 'codex-only', 'cursor-only', 'local-only', 'shared']);
+    expect(names).toEqual([
+      'claude-only',
+      'codex-only',
+      'cursor-only',
+      'local-only',
+      'shared',
+      'vscode-only',
+      'windsurf-only',
+    ]);
 
     const shared = servers.find((server) => server.name === 'shared');
     expect(shared?.command.kind).toBe('http');
@@ -66,6 +84,30 @@ describe('config imports', () => {
     expect(codexOnly?.source).toEqual({
       kind: 'import',
       path: path.join(FIXTURE_ROOT, 'home', '.codex', 'config.toml'),
+    });
+
+    const windsurfOnly = servers.find((server) => server.name === 'windsurf-only');
+    expect(windsurfOnly?.command.kind).toBe('stdio');
+    expect(windsurfOnly?.command.kind === 'stdio' ? windsurfOnly.command.command : undefined).toBe('windsurf-cli');
+    expect(windsurfOnly?.source).toEqual({
+      kind: 'import',
+      path: path.join(FIXTURE_ROOT, 'home', '.codeium', 'windsurf', 'mcp_config.json'),
+    });
+
+    const vscodeOnly = servers.find((server) => server.name === 'vscode-only');
+    expect(vscodeOnly?.command.kind).toBe('stdio');
+    expect(vscodeOnly?.command.kind === 'stdio' ? vscodeOnly.command.command : undefined).toBe('code-mcp');
+    expect(vscodeOnly?.source).toEqual({
+      kind: 'import',
+      path: path.join(
+        FIXTURE_ROOT,
+        'home',
+        'Library',
+        'Application Support',
+        'Code',
+        'User',
+        'mcp.json'
+      ),
     });
   });
 });

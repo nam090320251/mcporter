@@ -5,7 +5,7 @@ mcporter helps you lean into the "code execution" workflows highlighted in Anthr
 
 ## Key Capabilities
 
-- **Zero-config discovery.** `createRuntime()` loads `config/mcporter.json`, merges Cursor/Claude/Codex imports, expands `${ENV}` placeholders, and pools connections so you can reuse transports across multiple calls.
+- **Zero-config discovery.** `createRuntime()` loads `config/mcporter.json`, merges Cursor/Claude/Codex/Windsurf/VS Code imports, expands `${ENV}` placeholders, and pools connections so you can reuse transports across multiple calls.
 - **One-command CLI generation.** `mcporter generate-cli` turns any MCP server definition into a ready-to-run CLI, with optional bundling/compilation and metadata for easy regeneration.
 - **Friendly composable API.** `createServerProxy()` exposes tools as ergonomic camelCase methods, automatically applies JSON-schema defaults, validates required arguments, and hands back a `CallResult` with `.text()`, `.markdown()`, `.json()`, and `.content()` helpers.
 - **OAuth and stdio ergonomics.** Built-in OAuth caching, log tailing, and stdio wrappers let you work with HTTP, SSE, and stdio transports from the same interface.
@@ -89,7 +89,7 @@ const result = await callOnce({
 console.log(result); // raw MCP envelope
 ```
 
-`callOnce` automatically discovers the selected server (including Cursor/Claude/Codex imports), handles OAuth prompts, and closes transports when it finishes. It is ideal for manual runs or wiring mcporter directly into an agent tool hook.
+`callOnce` automatically discovers the selected server (including Cursor/Claude/Codex/Windsurf/VS Code imports), handles OAuth prompts, and closes transports when it finishes. It is ideal for manual runs or wiring mcporter directly into an agent tool hook.
 
 ## Compose Automations with the Runtime
 

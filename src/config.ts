@@ -6,9 +6,9 @@ import { parse as parseToml } from '@iarna/toml';
 import { z } from 'zod';
 import { expandHome } from './env.js';
 
-const ImportKindSchema = z.enum(['cursor', 'claude-code', 'claude-desktop', 'codex']);
+const ImportKindSchema = z.enum(['cursor', 'claude-code', 'claude-desktop', 'codex', 'windsurf', 'vscode']);
 
-const DEFAULT_IMPORTS: ImportKind[] = ['cursor', 'claude-code', 'claude-desktop', 'codex'];
+const DEFAULT_IMPORTS: ImportKind[] = ['cursor', 'claude-code', 'claude-desktop', 'codex', 'windsurf', 'vscode'];
 
 const RawEntrySchema = z.object({
   description: z.string().optional(),
@@ -85,7 +85,12 @@ export async function loadServerDefinitions(options: LoadConfigOptions = {}): Pr
 
   const merged = new Map<string, { raw: RawEntry; baseDir: string; source: ServerSource }>();
 
-  const imports = config.imports ?? DEFAULT_IMPORTS;
+  const configuredImports = config.imports;
+  const imports = configuredImports
+    ? configuredImports.length === 0
+      ? configuredImports
+      : [...configuredImports, ...DEFAULT_IMPORTS.filter((kind) => !configuredImports.includes(kind))]
+    : DEFAULT_IMPORTS;
   for (const importKind of imports) {
     const candidates = pathsForImport(importKind, rootDir);
     for (const candidate of candidates) {
@@ -288,10 +293,15 @@ function extractFromMcpJson(raw: unknown): RawEntryMap {
     return map;
   }
 
-  const container =
-    'mcpServers' in raw && raw.mcpServers && typeof raw.mcpServers === 'object'
-      ? (raw.mcpServers as Record<string, unknown>)
-      : (raw as Record<string, unknown>);
+  const container = (() => {
+    if ('mcpServers' in raw && raw.mcpServers && typeof raw.mcpServers === 'object') {
+      return raw.mcpServers as Record<string, unknown>;
+    }
+    if ('servers' in raw && raw.servers && typeof raw.servers === 'object') {
+      return raw.servers as Record<string, unknown>;
+    }
+    return raw as Record<string, unknown>;
+  })();
 
   for (const [name, value] of Object.entries(container)) {
     if (!value || typeof value !== 'object') {
@@ -417,6 +427,13 @@ function pathsForImport(kind: ImportKind, rootDir: string): string[] {
       return [defaultClaudeDesktopConfigPath()];
     case 'codex':
       return [path.join(os.homedir(), '.codex', 'config.toml')];
+    case 'windsurf':
+      return [defaultWindsurfConfigPath()];
+    case 'vscode':
+      return [
+        path.resolve(rootDir, '.vscode', 'mcp.json'),
+        ...defaultVscodeConfigPaths(),
+      ];
     default:
       return [];
   }
@@ -444,6 +461,36 @@ function defaultClaudeDesktopConfigPath(): string {
     return path.join(appData, 'Claude', 'claude_desktop_config.json');
   }
   return path.join(os.homedir(), '.config', 'Claude', 'claude_desktop_config.json');
+}
+
+// defaultWindsurfConfigPath returns the platform-specific Windsurf MCP config path.
+function defaultWindsurfConfigPath(): string {
+  if (process.platform === 'win32') {
+    const appData = process.env.APPDATA ?? path.join(os.homedir(), 'AppData', 'Roaming');
+    return path.join(appData, 'Codeium', 'windsurf', 'mcp_config.json');
+  }
+  return path.join(os.homedir(), '.codeium', 'windsurf', 'mcp_config.json');
+}
+
+// defaultVscodeConfigPaths returns potential VS Code MCP config paths across platforms.
+function defaultVscodeConfigPaths(): string[] {
+  if (process.platform === 'darwin') {
+    return [
+      path.join(os.homedir(), 'Library', 'Application Support', 'Code', 'User', 'mcp.json'),
+      path.join(os.homedir(), 'Library', 'Application Support', 'Code - Insiders', 'User', 'mcp.json'),
+    ];
+  }
+  if (process.platform === 'win32') {
+    const appData = process.env.APPDATA ?? path.join(os.homedir(), 'AppData', 'Roaming');
+    return [
+      path.join(appData, 'Code', 'User', 'mcp.json'),
+      path.join(appData, 'Code - Insiders', 'User', 'mcp.json'),
+    ];
+  }
+  return [
+    path.join(os.homedir(), '.config', 'Code', 'User', 'mcp.json'),
+    path.join(os.homedir(), '.config', 'Code - Insiders', 'User', 'mcp.json'),
+  ];
 }
 
 // fileExists checks for file presence with graceful failure handling.
