@@ -1,12 +1,7 @@
-import fs from 'node:fs';
-import { inspect } from 'node:util';
-import type { CallResult } from '../result-utils.js';
 import { createCallResult } from '../result-utils.js';
-import { logWarn } from './logger-context.js';
+import { type OutputFormat, printCallOutput, tailLogIfRequested } from './output-utils.js';
 import { dumpActiveHandles } from './runtime-debug.js';
 import { resolveCallTimeout, withTimeout } from './timeouts.js';
-
-export type OutputFormat = 'auto' | 'text' | 'markdown' | 'json' | 'raw';
 
 interface CallArgsParseResult {
   selector?: string;
@@ -141,26 +136,7 @@ export async function handleCall(
   args: string[]
 ): Promise<void> {
   const parsed = parseCallArguments(args);
-  const selector = parsed.selector;
-  let server = parsed.server;
-  let tool = parsed.tool;
-
-  if (selector && !server && selector.includes('.')) {
-    const [left, right] = selector.split('.', 2);
-    server = left;
-    tool = right;
-  } else if (selector && !server) {
-    server = selector;
-  } else if (selector && !tool) {
-    tool = selector;
-  }
-
-  if (!server) {
-    throw new Error('Missing server name. Provide it via <server>.<tool> or --server.');
-  }
-  if (!tool) {
-    throw new Error('Missing tool name. Provide it via <server>.<tool> or --tool.');
-  }
+  const { server, tool } = resolveCallTarget(parsed);
 
   const timeoutMs = resolveCallTimeout(parsed.timeoutMs);
   let result: unknown;
@@ -183,171 +159,29 @@ export async function handleCall(
   dumpActiveHandles('after call (formatted result)');
 }
 
-function printCallOutput<T>(wrapped: CallResult<T>, raw: T, format: OutputFormat): void {
-  switch (format) {
-    case 'raw': {
-      printRaw(raw);
-      return;
-    }
-    case 'json': {
-      const jsonValue = wrapped.json();
-      if (jsonValue !== null && attemptPrintJson(jsonValue)) {
-        return;
-      }
-      printRaw(raw);
-      return;
-    }
-    case 'markdown': {
-      const markdown = wrapped.markdown();
-      if (typeof markdown === 'string') {
-        console.log(markdown);
-        return;
-      }
-      const text = wrapped.text();
-      if (typeof text === 'string') {
-        console.log(text);
-        return;
-      }
-      const jsonValue = wrapped.json();
-      if (jsonValue !== null && attemptPrintJson(jsonValue)) {
-        return;
-      }
-      printRaw(raw);
-      return;
-    }
-    case 'text': {
-      const text = wrapped.text();
-      if (typeof text === 'string') {
-        console.log(text);
-        return;
-      }
-      const markdown = wrapped.markdown();
-      if (typeof markdown === 'string') {
-        console.log(markdown);
-        return;
-      }
-      const jsonValue = wrapped.json();
-      if (jsonValue !== null && attemptPrintJson(jsonValue)) {
-        return;
-      }
-      printRaw(raw);
-      return;
-    }
-    default: {
-      const jsonValue = wrapped.json();
-      if (jsonValue !== null && attemptPrintJson(jsonValue)) {
-        return;
-      }
-      const markdown = wrapped.markdown();
-      if (typeof markdown === 'string') {
-        console.log(markdown);
-        return;
-      }
-      const text = wrapped.text();
-      if (typeof text === 'string') {
-        console.log(text);
-        return;
-      }
-      printRaw(raw);
-    }
-  }
-}
+function resolveCallTarget(parsed: CallArgsParseResult): { server: string; tool: string } {
+  const selector = parsed.selector;
+  let server = parsed.server;
+  let tool = parsed.tool;
 
-function attemptPrintJson(value: unknown): boolean {
-  if (value === undefined) {
-    return false;
-  }
-  try {
-    if (value === null) {
-      console.log('null');
-    } else {
-      console.log(JSON.stringify(value, null, 2));
-    }
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function printRaw(raw: unknown): void {
-  if (typeof raw === 'string') {
-    console.log(raw);
-    return;
-  }
-  if (raw === null) {
-    console.log('null');
-    return;
-  }
-  if (raw === undefined) {
-    console.log('undefined');
-    return;
-  }
-  if (typeof raw === 'bigint') {
-    console.log(raw.toString());
-    return;
-  }
-  try {
-    const serialized = JSON.stringify(raw, null, 2);
-    if (serialized === undefined) {
-      if (typeof raw === 'symbol' || typeof raw === 'function') {
-        console.log(raw.toString());
-        return;
-      }
-      console.log(inspect(raw, { depth: 2, breakLength: 80 }));
-      return;
-    }
-    console.log(serialized);
-  } catch {
-    if (typeof raw === 'symbol' || typeof raw === 'function') {
-      console.log(raw.toString());
-      return;
-    }
-    console.log(inspect(raw, { depth: 2, breakLength: 80 }));
-  }
-}
-
-function tailLogIfRequested(result: unknown, enabled: boolean): void {
-  // Some servers still encode log paths inside the payload; surface a short tail when requested.
-  if (!enabled) {
-    return;
-  }
-  const candidates: string[] = [];
-  if (typeof result === 'string') {
-    const idx = result.indexOf(':');
-    if (idx !== -1) {
-      const candidate = result.slice(idx + 1).trim();
-      if (candidate) {
-        candidates.push(candidate);
-      }
-    }
-  }
-  if (result && typeof result === 'object') {
-    const possibleKeys = ['logPath', 'logFile', 'logfile', 'path'];
-    for (const key of possibleKeys) {
-      const value = (result as Record<string, unknown>)[key];
-      if (typeof value === 'string') {
-        candidates.push(value);
-      }
-    }
+  if (selector && !server && selector.includes('.')) {
+    const [left, right] = selector.split('.', 2);
+    server = left;
+    tool = right;
+  } else if (selector && !server) {
+    server = selector;
+  } else if (selector && !tool) {
+    tool = selector;
   }
 
-  for (const candidate of candidates) {
-    if (!fs.existsSync(candidate)) {
-      logWarn(`Log path not found: ${candidate}`);
-      continue;
-    }
-    try {
-      const content = fs.readFileSync(candidate, 'utf8');
-      const lines = content.trimEnd().split(/\r?\n/);
-      const tail = lines.slice(-20);
-      console.log(`--- tail ${candidate} ---`);
-      for (const line of tail) {
-        console.log(line);
-      }
-    } catch (error) {
-      logWarn(`Failed to read log file ${candidate}: ${(error as Error).message}`);
-    }
+  if (!server) {
+    throw new Error('Missing server name. Provide it via <server>.<tool> or --server.');
   }
+  if (!tool) {
+    throw new Error('Missing tool name. Provide it via <server>.<tool> or --tool.');
+  }
+
+  return { server, tool };
 }
 
 function coerceValue(value: string): unknown {
