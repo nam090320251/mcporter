@@ -1,5 +1,5 @@
 import type { GeneratedOption } from './generate/tools.js';
-import { cyanText, extraDimText, yellowText } from './terminal.js';
+import { cyanText, dimText, extraDimText, yellowText } from './terminal.js';
 
 export interface SelectDisplayOptionsResult {
   displayOptions: GeneratedOption[];
@@ -121,6 +121,43 @@ export function formatOptionalSummary(hiddenOptions: GeneratedOption[]): string 
   return extraDimText(`// optional (${names.length}): ${preview}${suffix}`);
 }
 
+interface SignatureFormatOptions {
+  colorize?: boolean;
+}
+
+export function formatFunctionSignature(
+  name: string,
+  options: GeneratedOption[],
+  outputSchema: unknown,
+  formatOptions?: SignatureFormatOptions
+): string {
+  const colorize = formatOptions?.colorize !== false;
+  const keyword = colorize ? extraDimText('function') : 'function';
+  const formattedName = colorize ? cyanText(name) : name;
+  const paramsText = options.map((option) => formatInlineParameter(option, colorize)).join(', ');
+  const returnType = inferReturnTypeName(outputSchema);
+  const signature = `${keyword} ${formattedName}(${paramsText})`;
+  return returnType ? `${signature}: ${returnType};` : `${signature};`;
+}
+
+export function formatCallExpressionExample(
+  serverName: string,
+  toolName: string,
+  options: GeneratedOption[]
+): string | undefined {
+  const assignments = options
+    .map((option) => ({ option, literal: buildExampleLiteral(option) }))
+    .filter(({ option, literal }) => option.required || literal !== undefined)
+    .map(({ option, literal }) => {
+      const value = literal ?? buildFallbackLiteral(option);
+      return `${option.property}: ${value}`;
+    });
+
+  const args = assignments.join(', ');
+  const callSuffix = assignments.length > 0 ? `(${args})` : '()';
+  return `mcporter call ${serverName}.${toolName}${callSuffix}`;
+}
+
 export function wrapCommentText(text: string, maxWidth = DEFAULT_WRAP_WIDTH): string[] {
   const trimmed = text.trim();
   if (trimmed.length === 0) {
@@ -146,4 +183,131 @@ export function wrapCommentText(text: string, maxWidth = DEFAULT_WRAP_WIDTH): st
   }
   lines.push(current);
   return lines;
+}
+
+function formatInlineParameter(option: GeneratedOption, colorize: boolean): string {
+  const typeAnnotation = formatTypeAnnotation(option, colorize);
+  const optionalSuffix = option.required ? '' : '?';
+  return `${option.property}${optionalSuffix}: ${typeAnnotation}`;
+}
+
+function inferReturnTypeName(schema: unknown): string | undefined {
+  if (!schema || typeof schema !== 'object') {
+    return undefined;
+  }
+  return inferSchemaDisplayType(schema as Record<string, unknown>);
+}
+
+function inferSchemaDisplayType(descriptor: Record<string, unknown>): string {
+  const title = typeof descriptor.title === 'string' ? descriptor.title.trim() : undefined;
+  if (title) {
+    return title;
+  }
+  const type = typeof descriptor.type === 'string' ? (descriptor.type as string) : undefined;
+  if (!type && typeof descriptor.properties === 'object') {
+    return 'object';
+  }
+  if (!type && descriptor.items && typeof descriptor.items === 'object') {
+    return `${inferSchemaDisplayType(descriptor.items as Record<string, unknown>)}[]`;
+  }
+  if (type === 'array' && descriptor.items && typeof descriptor.items === 'object') {
+    return `${inferSchemaDisplayType(descriptor.items as Record<string, unknown>)}[]`;
+  }
+  if (!type && Array.isArray(descriptor.enum)) {
+    const values = (descriptor.enum as unknown[]).filter((entry): entry is string => typeof entry === 'string');
+    if (values.length > 0) {
+      return values.map((entry) => JSON.stringify(entry)).join(' | ');
+    }
+  }
+  return type ?? 'unknown';
+}
+
+function formatTypeAnnotation(option: GeneratedOption, colorize: boolean): string {
+  let baseType: string;
+  if (option.enumValues && option.enumValues.length > 0) {
+    baseType = option.enumValues.map((value) => JSON.stringify(value)).join(' | ');
+  } else {
+    switch (option.type) {
+      case 'number':
+        baseType = 'number';
+        break;
+      case 'boolean':
+        baseType = 'boolean';
+        break;
+      case 'array':
+        baseType = 'string[]';
+        break;
+      case 'string':
+        baseType = 'string';
+        break;
+      default:
+        baseType = 'unknown';
+        break;
+    }
+  }
+  const tint = colorize ? dimText : (value: string): string => value;
+  const base = tint(baseType);
+  if (option.formatHint && option.type === 'string' && (!option.enumValues || option.enumValues.length === 0)) {
+    const descriptionText = option.description?.toLowerCase() ?? '';
+    const hintLower = option.formatHint.toLowerCase();
+    const normalizedDescription = descriptionText.replace(/[\s_-]+/g, '');
+    const normalizedHint = hintLower.replace(/[\s_-]+/g, '');
+    const hasHintInDescription = descriptionText.includes(hintLower) || normalizedDescription.includes(normalizedHint);
+    if (hasHintInDescription) {
+      return base;
+    }
+    return `${base} ${tint(`/* ${option.formatHint} */`)}`;
+  }
+  return base;
+}
+
+function buildExampleLiteral(option: GeneratedOption): string | undefined {
+  if (option.enumValues && option.enumValues.length > 0) {
+    return JSON.stringify(option.enumValues[0]);
+  }
+  if (!option.exampleValue) {
+    return undefined;
+  }
+  if (option.type === 'array') {
+    const values = option.exampleValue
+      .split(',')
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+    if (values.length === 0) {
+      return undefined;
+    }
+    return `[${values.map((entry) => JSON.stringify(entry)).join(', ')}]`;
+  }
+  if (option.type === 'number' || option.type === 'boolean') {
+    return option.exampleValue;
+  }
+  try {
+    const parsed = JSON.parse(option.exampleValue);
+    if (typeof parsed === 'number' || typeof parsed === 'boolean') {
+      return option.exampleValue;
+    }
+  } catch {
+    // Ignore JSON parse errors; fall through to quote string values.
+  }
+  return JSON.stringify(option.exampleValue);
+}
+
+function buildFallbackLiteral(option: GeneratedOption): string {
+  switch (option.type) {
+    case 'number':
+      return '1';
+    case 'boolean':
+      return 'true';
+    case 'array':
+      return '["value1"]';
+    default: {
+      if (option.property.toLowerCase().includes('id')) {
+        return JSON.stringify('example-id');
+      }
+      if (option.property.toLowerCase().includes('url')) {
+        return JSON.stringify('https://example.com');
+      }
+      return JSON.stringify('value');
+    }
+  }
 }

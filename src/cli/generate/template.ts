@@ -3,6 +3,7 @@ import path from 'node:path';
 import type { ServerDefinition } from '../../config.js';
 import type { GeneratedOption, ToolMetadata } from './tools.js';
 import { buildEmbeddedSchemaMap } from './tools.js';
+import { formatFunctionSignature } from '../list-detail-helpers.js';
 
 export interface TemplateInput {
   outputPath?: string;
@@ -60,7 +61,7 @@ export function renderTemplate({
   const embeddedSchemas = JSON.stringify(buildEmbeddedSchemaMap(tools), undefined, 2);
   const renderedTools = tools.map((tool) => renderToolCommand(tool, timeoutMs));
   const toolBlocks = renderedTools.map((entry) => entry.block).join('\n\n');
-  const signatureMap = Object.fromEntries(renderedTools.map((entry) => [entry.commandName, entry.signature]));
+  const signatureMap = Object.fromEntries(renderedTools.map((entry) => [entry.commandName, entry.tsSignature]));
   const signatureMapLiteral = JSON.stringify(signatureMap, undefined, 2);
   return `#!/usr/bin/env ${runtimeKind === 'bun' ? 'bun' : 'node'}
 ${imports}
@@ -203,7 +204,7 @@ function normalizeEmbeddedServer(server: typeof embeddedServer) {
 export function renderToolCommand(
   tool: ToolMetadata,
   defaultTimeout: number
-): { block: string; commandName: string; signature: string } {
+): { block: string; commandName: string; signature: string; tsSignature: string } {
   const commandName = tool.tool.name.replace(/[^a-zA-Z0-9-]/g, '-');
   const description = tool.tool.description ?? `Invoke the ${tool.tool.name} tool.`;
   const optionLines = tool.options.map((option) => renderOption(option)).join('\n');
@@ -220,6 +221,9 @@ export function renderToolCommand(
     })
     .join('\n\t\t');
   const signature = usageLine ? `${commandName} ${usageLine}` : commandName;
+  const tsSignature = formatFunctionSignature(tool.tool.name, tool.options, tool.tool.outputSchema, {
+    colorize: false,
+  });
   const exampleInvocation = buildExampleInvocation(commandName, tool.options);
   const exampleSnippet = exampleInvocation
     ? `\n\t.addHelpText('after', () => '\\nExample:\\n  ' + ${exampleInvocation})`
@@ -250,7 +254,7 @@ ${optionLines ? `\n${optionLines}` : ''}
 \t\t\tawait runtime.close(serverName).catch(() => {});
 \t\t}
 \t})${exampleSnippet};`;
-  return { block, commandName, signature };
+  return { block, commandName, signature, tsSignature };
 }
 
 function renderOption(option: GeneratedOption): string {

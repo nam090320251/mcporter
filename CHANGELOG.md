@@ -5,6 +5,7 @@
 - Swapped the `--required-only` / `--include-optional` pair for a single `--all-parameters` flag, updated the CLI hinting copy, and documented the new workflow across README/spec/call-syntax.
 - Refined single-server output: doc blocks insert a blank line before `@param`, long sentences wrap to 100 characters, the server summary line prints after the tool details, and color tinting now keeps `function` keywords grey while parameter labels highlight the `@param` and name.
 - `Examples:` now shows a single, ellipsized `mcporter call …` entry (unless the call already fits in ~80 characters) so verbose argument lists don't dominate the output.
+- Reused the new formatter inside `mcporter generate-cli`, so command summaries (and help) display the same TypeScript-style signatures you see in `mcporter list`.
 - Guaranteed that default listings always show at least five parameters (even if every field is optional) before summarising the rest, and added compact summaries (`// optional (N): …`).
 - Added `src/cli/list-detail-helpers.ts` plus dedicated unit tests (`tests/list-detail-helpers.test.ts`) covering wrapping, param selection, and optional summaries; introduced an inline snapshot test for a complex Linear server to prevent regressions in the CLI formatter.
 - Exported the identifier normalization helpers so other modules can reuse the shared Levenshtein logic without duplicate implementations.

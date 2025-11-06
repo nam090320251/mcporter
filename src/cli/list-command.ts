@@ -6,7 +6,13 @@ import { extractEphemeralServerFlags } from './ephemeral-flags.js';
 import type { GeneratedOption } from './generate/tools.js';
 import { extractOptions } from './generate/tools.js';
 import { chooseClosestIdentifier } from './identifier-helpers.js';
-import { buildDocComment, formatOptionalSummary, selectDisplayOptions } from './list-detail-helpers.js';
+import {
+  buildDocComment,
+  formatCallExpressionExample,
+  formatFunctionSignature,
+  formatOptionalSummary,
+  selectDisplayOptions,
+} from './list-detail-helpers.js';
 import type { ListSummaryResult, StatusCategory } from './list-format.js';
 import { classifyListError, formatSourceSuffix, renderServerListRow } from './list-format.js';
 import { boldText, cyanText, dimText, extraDimText, supportsSpinner, yellowText } from './terminal.js';
@@ -346,89 +352,6 @@ function quoteCommandSegment(segment: string): string {
   return JSON.stringify(segment);
 }
 
-function formatFunctionSignature(name: string, options: GeneratedOption[], outputSchema: unknown): string {
-  const paramsText = options.map(formatInlineParameter).join(', ');
-  const returnType = inferReturnTypeName(outputSchema);
-  const keyword = extraDimText('function');
-  const signature = `${keyword} ${cyanText(name)}(${paramsText})`;
-  return returnType ? `${signature}: ${returnType};` : `${signature};`;
-}
-
-function formatInlineParameter(option: GeneratedOption): string {
-  const typeAnnotation = formatTypeAnnotation(option);
-  const optionalSuffix = option.required ? '' : '?';
-  return `${option.property}${optionalSuffix}: ${typeAnnotation}`;
-}
-
-function inferReturnTypeName(schema: unknown): string | undefined {
-  if (!schema || typeof schema !== 'object') {
-    return undefined;
-  }
-  return inferSchemaDisplayType(schema as Record<string, unknown>);
-}
-
-function inferSchemaDisplayType(descriptor: Record<string, unknown>): string {
-  const title = typeof descriptor.title === 'string' ? descriptor.title.trim() : undefined;
-  if (title) {
-    return title;
-  }
-  const type = typeof descriptor.type === 'string' ? (descriptor.type as string) : undefined;
-  if (!type && typeof descriptor.properties === 'object') {
-    return 'object';
-  }
-  if (!type && descriptor.items && typeof descriptor.items === 'object') {
-    return `${inferSchemaDisplayType(descriptor.items as Record<string, unknown>)}[]`;
-  }
-  if (type === 'array' && descriptor.items && typeof descriptor.items === 'object') {
-    return `${inferSchemaDisplayType(descriptor.items as Record<string, unknown>)}[]`;
-  }
-  if (!type && Array.isArray(descriptor.enum)) {
-    const values = (descriptor.enum as unknown[]).filter((entry): entry is string => typeof entry === 'string');
-    if (values.length > 0) {
-      return values.map((entry) => JSON.stringify(entry)).join(' | ');
-    }
-  }
-  return type ?? 'unknown';
-}
-
-function formatTypeAnnotation(option: GeneratedOption): string {
-  let baseType: string;
-  if (option.enumValues && option.enumValues.length > 0) {
-    baseType = option.enumValues.map((value) => JSON.stringify(value)).join(' | ');
-  } else {
-    switch (option.type) {
-      case 'number':
-        baseType = 'number';
-        break;
-      case 'boolean':
-        baseType = 'boolean';
-        break;
-      case 'array':
-        baseType = 'string[]';
-        break;
-      case 'string':
-        baseType = 'string';
-        break;
-      default:
-        baseType = 'unknown';
-        break;
-    }
-  }
-  const dimmedType = dimText(baseType);
-  if (option.formatHint && option.type === 'string' && (!option.enumValues || option.enumValues.length === 0)) {
-    const descriptionText = option.description?.toLowerCase() ?? '';
-    const hintLower = option.formatHint.toLowerCase();
-    const normalizedDescription = descriptionText.replace(/[\s_-]+/g, '');
-    const normalizedHint = hintLower.replace(/[\s_-]+/g, '');
-    const hasHintInDescription = descriptionText.includes(hintLower) || normalizedDescription.includes(normalizedHint);
-    if (hasHintInDescription) {
-      return dimmedType;
-    }
-    return `${dimmedType} ${dimText(`/* ${option.formatHint} */`)}`;
-  }
-  return dimmedType;
-}
-
 function resolveServerDefinition(
   runtime: Awaited<ReturnType<typeof import('../runtime.js')['createRuntime']>>,
   name: string
@@ -487,76 +410,7 @@ function truncateExample(example: string, maxLength: number): string {
     return `${prefix}...${suffix}`;
   }
   const args = example.slice(openIndex + 1, closeIndex).trim();
-  const shortened = args.slice(0, available).trimEnd().replace(/[,\s]+$/, '');
+  const shortened = args.slice(0, available).trimEnd().replace(/[\s,]+$/, '');
   const ellipsis = shortened.length > 0 ? `${shortened}, ...` : '...';
   return `${prefix}${ellipsis}${suffix}`;
-}
-
-function formatCallExpressionExample(
-  serverName: string,
-  toolName: string,
-  options: GeneratedOption[]
-): string | undefined {
-  const assignments = options
-    .map((option) => ({ option, literal: buildExampleLiteral(option) }))
-    .filter(({ option, literal }) => option.required || literal !== undefined)
-    .map(({ option, literal }) => {
-      const value = literal ?? buildFallbackLiteral(option);
-      return `${option.property}: ${value}`;
-    });
-
-  const args = assignments.join(', ');
-  const callSuffix = assignments.length > 0 ? `(${args})` : '()';
-  return `mcporter call ${serverName}.${toolName}${callSuffix}`;
-}
-
-function buildExampleLiteral(option: GeneratedOption): string | undefined {
-  if (option.enumValues && option.enumValues.length > 0) {
-    return JSON.stringify(option.enumValues[0]);
-  }
-  if (!option.exampleValue) {
-    return undefined;
-  }
-  if (option.type === 'array') {
-    const values = option.exampleValue
-      .split(',')
-      .map((entry) => entry.trim())
-      .filter(Boolean);
-    if (values.length === 0) {
-      return undefined;
-    }
-    return `[${values.map((entry) => JSON.stringify(entry)).join(', ')}]`;
-  }
-  if (option.type === 'number' || option.type === 'boolean') {
-    return option.exampleValue;
-  }
-  try {
-    const parsed = JSON.parse(option.exampleValue);
-    if (typeof parsed === 'number' || typeof parsed === 'boolean') {
-      return option.exampleValue;
-    }
-  } catch {
-    // Ignore JSON parse errors; fall through to quote string values.
-  }
-  return JSON.stringify(option.exampleValue);
-}
-
-function buildFallbackLiteral(option: GeneratedOption): string {
-  switch (option.type) {
-    case 'number':
-      return '1';
-    case 'boolean':
-      return 'true';
-    case 'array':
-      return '["value1"]';
-    default: {
-      if (option.property.toLowerCase().includes('id')) {
-        return JSON.stringify('example-id');
-      }
-      if (option.property.toLowerCase().includes('url')) {
-        return JSON.stringify('https://example.com');
-      }
-      return JSON.stringify('value');
-    }
-  }
 }
