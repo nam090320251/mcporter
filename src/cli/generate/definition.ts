@@ -50,6 +50,7 @@ export async function resolveServerDefinition(
   const trimmed = serverRef.trim();
 
   if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+    // Allow callers to inline a JSON server definition (used by tests + CLI).
     const parsed = JSON.parse(trimmed) as ServerDefinition & { name: string };
     if (!parsed.name) {
       throw new Error("Inline server definition must include a 'name' field.");
@@ -105,6 +106,7 @@ export async function fetchTools(
   configPath?: string,
   rootDir?: string
 ): Promise<ServerToolInfo[]> {
+  // Reuse the runtime helper so bundle builds and CLI generation share the same discovery path.
   const runtime = await createRuntime({
     configPath,
     rootDir,

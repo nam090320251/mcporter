@@ -47,6 +47,7 @@ export function extractOptions(tool: ServerToolInfo): GeneratedOption[] {
   if (record.type !== 'object' || typeof record.properties !== 'object') {
     return [];
   }
+  // Flatten schema properties into Commander-friendly option descriptors.
   const properties = record.properties as Record<string, unknown>;
   const requiredList = Array.isArray(record.required) ? (record.required as string[]) : [];
   return Object.entries(properties).map(([property, descriptor]) => {
