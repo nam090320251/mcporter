@@ -398,7 +398,8 @@ function formatToolSignatureBlock(
   if (description) {
     lines.push(extraDimText(`// ${description}`));
   }
-  const optionalNote = formatOptionalNote(requiredOnly ? allOptions.filter((entry) => !entry.required) : []);
+  const omittedOptions = requiredOnly ? allOptions.filter((entry) => !entry.required) : [];
+  const optionalNote = formatOptionalNote(omittedOptions);
 
   const inlineEligible = isInlineFriendly(visibleOptions, optionalNote);
 
@@ -456,8 +457,11 @@ function buildInlineSignature(name: string, options: GeneratedOption[]): string 
   return `${cyanText(name)}({ ${parts.join(', ')} })`;
 }
 
-function formatOptionalNote(omittedOptions: GeneratedOption[]): string | undefined {
+function formatOptionalNote(omittedOptions: GeneratedOption[], includeAll: boolean): string | undefined {
   if (omittedOptions.length === 0) {
+    return undefined;
+  }
+  if (includeAll) {
     return undefined;
   }
   const names = omittedOptions.map((option) => option.property);

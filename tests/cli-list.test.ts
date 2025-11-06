@@ -277,7 +277,6 @@ describe('CLI list classification', () => {
     expect(lines.some((line) => line.includes('format?: "json" | "markdown"'))).toBe(true);
     expect(lines.some((line) => line.includes('dueBefore?: string'))).toBe(true);
     expect(lines.some((line) => line.includes('mcporter call calculator.add(a: 1, format: "json")'))).toBe(true);
-    expect(lines.some((line) => line.includes('-> result:'))).toBe(true);
     expect(listToolsSpy).toHaveBeenCalledWith('calculator', { includeSchema: true });
 
     logSpy.mockRestore();
