@@ -18,7 +18,16 @@ describe('extractEphemeralServerFlags', () => {
   });
 
   it('records name/description/persist metadata', () => {
-    const args = ['--http-url', 'https://mcp.example.com/mcp', '--name', 'example', '--description', 'Test', '--persist', 'config.json'];
+    const args = [
+      '--http-url',
+      'https://mcp.example.com/mcp',
+      '--name',
+      'example',
+      '--description',
+      'Test',
+      '--persist',
+      'config.json',
+    ];
     const spec = extractEphemeralServerFlags(args);
     expect(spec).toEqual({
       httpUrl: 'https://mcp.example.com/mcp',

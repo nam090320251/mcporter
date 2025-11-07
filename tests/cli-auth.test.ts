@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import type { ServerDefinition } from '../src/config.js';
 
 process.env.MCPORTER_DISABLE_AUTORUN = '1';
 const cliModulePromise = import('../src/cli.js');
@@ -51,16 +52,18 @@ describe('mcporter auth ad-hoc support', () => {
       command: { kind: 'http', url: new URL('https://mcp.vercel.com') },
       tokenCacheDir: '/tmp/cache',
     } as ServerDefinition;
+    const registerDefinition = vi.fn();
+    const listTools = vi.fn().mockResolvedValue([{ name: 'ok' }]);
     const runtime = {
       getDefinitions: () => [definition],
-      registerDefinition: vi.fn(),
-      listTools: vi.fn().mockResolvedValue([{ name: 'ok' }]),
+      registerDefinition,
+      listTools,
       getDefinition: () => definition,
     } as unknown as Awaited<ReturnType<typeof import('../src/runtime.js')['createRuntime']>>;
 
     await handleAuth(runtime, ['https://mcp.vercel.com']);
 
-    expect(runtime.listTools).toHaveBeenCalledWith('vercel', { autoAuthorize: true });
-    expect(runtime.registerDefinition).not.toHaveBeenCalled();
+    expect(listTools).toHaveBeenCalledWith('vercel', { autoAuthorize: true });
+    expect(registerDefinition).not.toHaveBeenCalled();
   });
 });

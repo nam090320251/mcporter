@@ -1,18 +1,16 @@
 import ora from 'ora';
 import type { ServerDefinition } from '../config.js';
-import type { ServerToolInfo } from '../runtime.js';
 import { type EphemeralServerSpec, persistEphemeralServer, resolveEphemeralServer } from './adhoc-server.js';
 import { extractEphemeralServerFlags } from './ephemeral-flags.js';
-import type { GeneratedOption } from './generate/tools.js';
 import type { ToolMetadata } from './generate/tools.js';
 import { chooseClosestIdentifier } from './identifier-helpers.js';
 import { buildToolDoc, formatExampleBlock } from './list-detail-helpers.js';
-import { findServerByHttpUrl } from './server-lookup.js';
-import { loadToolMetadata } from './tool-cache.js';
 import type { ListSummaryResult, StatusCategory } from './list-format.js';
 import { classifyListError, formatSourceSuffix, renderServerListRow } from './list-format.js';
-import { boldText, cyanText, dimText, extraDimText, supportsSpinner, yellowText } from './terminal.js';
+import { findServerByHttpUrl } from './server-lookup.js';
+import { boldText, dimText, extraDimText, supportsSpinner, yellowText } from './terminal.js';
 import { LIST_TIMEOUT_MS, withTimeout } from './timeouts.js';
+import { loadToolMetadata } from './tool-cache.js';
 
 export function extractListFlags(args: string[]): {
   schema: boolean;
@@ -200,14 +198,18 @@ export async function handleList(
   const startedAt = Date.now();
   try {
     // Always request schemas so we can render CLI-style parameter hints without re-querying per tool.
-    const metadataEntries = await withTimeout(
-      loadToolMetadata(runtime, target, { includeSchema: true }),
-      timeoutMs
-    );
+    const metadataEntries = await withTimeout(loadToolMetadata(runtime, target, { includeSchema: true }), timeoutMs);
     const durationMs = Date.now() - startedAt;
-    const summaryLine = printSingleServerHeader(definition, metadataEntries.length, durationMs, transportSummary, sourcePath, {
-      printSummaryNow: false,
-    });
+    const summaryLine = printSingleServerHeader(
+      definition,
+      metadataEntries.length,
+      durationMs,
+      transportSummary,
+      sourcePath,
+      {
+        printSummaryNow: false,
+      }
+    );
     if (metadataEntries.length === 0) {
       console.log('  Tools: <none>');
       console.log(summaryLine);
@@ -300,7 +302,12 @@ function printSingleServerHeader(
   return summaryLine;
 }
 
-function printToolDetail(serverName: string, metadata: ToolMetadata, includeSchema: boolean, requiredOnly: boolean): ToolDetailResult {
+function printToolDetail(
+  serverName: string,
+  metadata: ToolMetadata,
+  includeSchema: boolean,
+  requiredOnly: boolean
+): ToolDetailResult {
   const doc = buildToolDoc({
     serverName,
     toolName: metadata.tool.name,

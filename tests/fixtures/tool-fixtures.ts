@@ -4,8 +4,7 @@ import type { ServerToolInfo } from '../../src/runtime.js';
 export const integrationDefinition: ServerDefinition = {
   name: 'integration',
   description: 'Integration test server',
-  command: { kind: 'http', url: 'https://example.com/mcp' },
-  transport: 'stdio',
+  command: { kind: 'http', url: new URL('https://example.com/mcp') },
 };
 
 export const listCommentsTool: ServerToolInfo = {

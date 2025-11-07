@@ -75,8 +75,8 @@ export function renderClientModule(input: EmitClientTemplateInput): string {
   lines.push('  const ownsRuntime = !options.runtime;');
   lines.push(`  const proxy = createServerProxy(runtime, ${JSON.stringify(serverName)});`);
   lines.push(`  const client: ${clientType} = {`);
-  input.docs.forEach((entry, index) => {
-    const methodName = entry.doc.tsSignature.match(/^function\s+([^\(]+)/)?.[1] ?? entry.toolName;
+  input.docs.forEach((entry, _index) => {
+    const methodName = entry.doc.tsSignature.match(/^function\s+([^()]+)/)?.[1] ?? entry.toolName;
     lines.push(`    async ${methodName}(params: Parameters<${input.interfaceName}['${methodName}']>[0]) {`);
     lines.push(
       `      const tool = proxy.${entry.methodName} as (args: Parameters<${input.interfaceName}['${methodName}']>[0]) => Promise<unknown>;`

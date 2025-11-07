@@ -2,10 +2,10 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import type { Runtime } from '../src/runtime.js';
-import { handleEmitTs, __test as emitTsTestInternals } from '../src/cli/emit-ts-command.js';
+import { __test as emitTsTestInternals, handleEmitTs } from '../src/cli/emit-ts-command.js';
 import { renderClientModule, renderTypesModule } from '../src/cli/emit-ts-templates.js';
 import { buildToolMetadata } from '../src/cli/generate/tools.js';
+import type { Runtime } from '../src/runtime.js';
 import { integrationDefinition, listCommentsTool } from './fixtures/tool-fixtures.js';
 
 function createRuntimeStub(): Runtime {

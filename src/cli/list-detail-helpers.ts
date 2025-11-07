@@ -110,7 +110,6 @@ export function buildDocComment(
       colorize,
       highlightParam,
       highlightName,
-      tint,
     });
     lines.push(...optionLines);
   }
@@ -125,10 +124,9 @@ function formatParamDoc(
     colorize: boolean;
     highlightParam: (value: string) => string;
     highlightName: (value: string) => string;
-    tint: (value: string) => string;
   }
 ): string[] {
-  const { colorize, highlightParam, highlightName, tint } = formatting;
+  const { colorize, highlightParam, highlightName } = formatting;
   const descriptionLines = option.description?.split(/\r?\n/) ?? [''];
   const optionalSuffix = option.required ? '' : '?';
   const plainLabel = `@param ${option.property}${optionalSuffix}`;
@@ -139,7 +137,11 @@ function formatParamDoc(
   descriptionLines.forEach((entry, index) => {
     const suffix = entry.trimEnd();
     if (index === 0) {
-      const lineParts = [colorize ? extraDimText(' * ') : ' * ', highlightParam('@param '), highlightName(`${option.property}${optionalSuffix}`)];
+      const lineParts = [
+        colorize ? extraDimText(' * ') : ' * ',
+        highlightParam('@param '),
+        highlightName(`${option.property}${optionalSuffix}`),
+      ];
       if (suffix.length > 0) {
         const wrapped = wrapCommentText(suffix, wrapWidth - plainLabel.length - 1);
         if (wrapped.length > 0) {
@@ -280,7 +282,10 @@ function truncateExample(example: string, maxLength: number): string {
     return `${prefix}...${suffix}`;
   }
   const args = example.slice(openIndex + 1, closeIndex).trim();
-  const shortened = args.slice(0, available).trimEnd().replace(/[\s,]+$/, '');
+  const shortened = args
+    .slice(0, available)
+    .trimEnd()
+    .replace(/[\s,]+$/, '');
   const ellipsis = shortened.length > 0 ? `${shortened}, ...` : '...';
   return `${prefix}${ellipsis}${suffix}`;
 }

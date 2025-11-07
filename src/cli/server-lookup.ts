@@ -1,9 +1,6 @@
 import type { ServerDefinition } from '../config.js';
 
-export function findServerByHttpUrl(
-  definitions: readonly ServerDefinition[],
-  urlString: string
-): string | undefined {
+export function findServerByHttpUrl(definitions: readonly ServerDefinition[], urlString: string): string | undefined {
   const normalizedTarget = normalizeUrl(urlString);
   if (!normalizedTarget) {
     return undefined;

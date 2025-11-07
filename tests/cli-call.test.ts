@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { ServerDefinition } from '../src/config.js';
 import { CliUsageError } from '../src/cli/errors.js';
+import type { ServerDefinition } from '../src/config.js';
 
 process.env.MCPORTER_DISABLE_AUTORUN = '1';
 const cliModulePromise = import('../src/cli.js');
@@ -266,17 +266,19 @@ describe('CLI call argument parsing', () => {
       command: { kind: 'http', url: new URL('https://mcp.vercel.com') },
       source: { kind: 'local', path: '/tmp/config.json' },
     } as ServerDefinition;
+    const registerDefinition = vi.fn();
+    const callTool = vi.fn().mockResolvedValue({ ok: true });
     const runtime = {
       getDefinitions: () => [definition],
-      registerDefinition: vi.fn(),
-      callTool: vi.fn().mockResolvedValue({ ok: true }),
+      registerDefinition,
+      callTool,
       close: vi.fn().mockResolvedValue(undefined),
     } as unknown as Awaited<ReturnType<typeof import('../src/runtime.js')['createRuntime']>>;
 
     await handleCall(runtime, ['--server', 'https://mcp.vercel.com', '--tool', 'list_projects']);
 
-    expect(runtime.callTool).toHaveBeenCalledWith('vercel', 'list_projects', { args: {} });
-    expect(runtime.registerDefinition).not.toHaveBeenCalled();
+    expect(callTool).toHaveBeenCalledWith('vercel', 'list_projects', { args: {} });
+    expect(registerDefinition).not.toHaveBeenCalled();
   });
 
   it('errors when too many positional arguments are supplied', async () => {

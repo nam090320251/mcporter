@@ -302,17 +302,19 @@ describe('CLI list classification', () => {
       command: { kind: 'http', url: new URL('https://mcp.vercel.com') },
       source: { kind: 'local', path: '/tmp/config.json' },
     };
+    const registerDefinition = vi.fn();
+    const listTools = vi.fn().mockResolvedValue([{ name: 'ok' }]);
     const runtime = {
       getDefinitions: () => [definition],
-      registerDefinition: vi.fn(),
+      registerDefinition,
       getDefinition: () => definition,
-      listTools: vi.fn().mockResolvedValue([{ name: 'ok' }]),
+      listTools,
     } as unknown as Awaited<ReturnType<typeof import('../src/runtime.js')['createRuntime']>>;
 
     await handleList(runtime, ['https://mcp.vercel.com']);
 
-    expect(runtime.listTools).toHaveBeenCalledWith('vercel', expect.anything());
-    expect(runtime.registerDefinition).not.toHaveBeenCalled();
+    expect(listTools).toHaveBeenCalledWith('vercel', expect.anything());
+    expect(registerDefinition).not.toHaveBeenCalled();
   });
 
   it('summarizes hidden optional parameters and hints include flag', async () => {

@@ -6,7 +6,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import express from 'express';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { metadataPathForArtifact, readCliMetadata } from '../src/cli-metadata.js';
+import { readCliMetadata } from '../src/cli-metadata.js';
 import { generateCli, __test as generateCliInternals } from '../src/generate-cli.js';
 
 let baseUrl: URL;
@@ -199,7 +199,7 @@ describe('generateCli', () => {
             reject(new Error('Expected list_comments to fail'));
             return;
           }
-          expect(stderr).toContain("Did you mean list-comments?");
+          expect(stderr).toContain('Did you mean list-comments?');
           resolve();
         }
       );
@@ -251,10 +251,7 @@ describe('generateCli', () => {
     const altContent = await fs.readFile(altOutput, 'utf8');
     expect(altContent).toContain('const embeddedName = "integration"');
 
-    const altMetadataPath = metadataPathForArtifact(altOutput);
-    const altMetadata = JSON.parse(await fs.readFile(altMetadataPath, 'utf8')) as Awaited<
-      ReturnType<typeof readCliMetadata>
-    >;
+    const altMetadata = await readCliMetadata(altOutput);
     expect(altMetadata.artifact.kind).toBe('template');
     expect(altMetadata.invocation.outputPath).toBe(altOutput);
     expect(['node', 'bun']).toContain(altMetadata.invocation.runtime);

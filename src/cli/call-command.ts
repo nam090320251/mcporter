@@ -1,11 +1,11 @@
-import type { ServerToolInfo } from '../runtime.js';
 import { wrapCallResult } from '../result-utils.js';
+import type { ServerToolInfo } from '../runtime.js';
 import { type EphemeralServerSpec, persistEphemeralServer, resolveEphemeralServer } from './adhoc-server.js';
 import { parseCallExpressionFragment } from './call-expression-parser.js';
+import { extractEphemeralServerFlags } from './ephemeral-flags.js';
 import { CliUsageError } from './errors.js';
 import { extractOptions } from './generate/tools.js';
 import { chooseClosestIdentifier, normalizeIdentifier } from './identifier-helpers.js';
-import { extractEphemeralServerFlags } from './ephemeral-flags.js';
 import { type OutputFormat, printCallOutput, tailLogIfRequested } from './output-utils.js';
 import { dumpActiveHandles } from './runtime-debug.js';
 import { findServerByHttpUrl } from './server-lookup.js';
@@ -184,9 +184,10 @@ export function parseCallArguments(args: string[]): CallArgsParseResult {
   return result;
 }
 
-function parseKeyValueToken(token: string, nextToken: string | undefined):
-  | { key: string; rawValue: string; consumed: number }
-  | undefined {
+function parseKeyValueToken(
+  token: string,
+  nextToken: string | undefined
+): { key: string; rawValue: string; consumed: number } | undefined {
   const eqIndex = token.indexOf('=');
   if (eqIndex !== -1) {
     const key = token.slice(0, eqIndex);
@@ -350,7 +351,9 @@ async function hydratePositionalArguments(
   }
   const toolInfo = tools.find((entry) => entry.name === tool);
   if (!toolInfo) {
-    throw new Error(`Unknown tool '${tool}' on server '${server}'. Double-check the name or run mcporter list ${server}.`);
+    throw new Error(
+      `Unknown tool '${tool}' on server '${server}'. Double-check the name or run mcporter list ${server}.`
+    );
   }
   if (!toolInfo.inputSchema) {
     throw new Error(`Tool '${tool}' does not expose an input schema; name positional arguments explicitly.`);
@@ -476,14 +479,19 @@ function extractMissingToolFromError(error: unknown): string | undefined {
 }
 
 function buildCallExpressionUsageError(error: unknown): CliUsageError {
-  const reason = error instanceof Error ? error.message : String(error ?? 'Unknown error');
+  const reason =
+    error instanceof Error
+      ? error.message
+      : typeof error === 'string'
+        ? error
+        : JSON.stringify(error ?? 'Unknown error');
   const lines = [
     'Unable to parse function-style call.',
     `Reason: ${reason}`,
     '',
     'Examples:',
-    "  mcporter 'context7.resolve-library-id(libraryName: \"react\")'",
-    "  mcporter 'context7.resolve-library-id(\"react\")'",
+    '  mcporter \'context7.resolve-library-id(libraryName: "react")\'',
+    '  mcporter \'context7.resolve-library-id("react")\'',
     '  mcporter context7.resolve-library-id libraryName=react',
     '',
     'Tip: wrap the entire expression in single quotes so the shell preserves parentheses and commas.',

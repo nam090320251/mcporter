@@ -1,9 +1,10 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import type { CliArtifactMetadata } from '../../cli-metadata.js';
 import type { ServerDefinition } from '../../config.js';
+import { buildToolDoc, type ToolOptionDoc } from '../list-detail-helpers.js';
 import type { GeneratedOption, ToolMetadata } from './tools.js';
 import { buildEmbeddedSchemaMap } from './tools.js';
-import { buildToolDoc, type ToolOptionDoc } from '../list-detail-helpers.js';
 
 export interface TemplateInput {
   outputPath?: string;
@@ -16,6 +17,7 @@ export interface TemplateInput {
     name: string;
     version: string;
   };
+  metadata: CliArtifactMetadata;
 }
 
 export async function writeTemplate(input: TemplateInput): Promise<string> {
@@ -45,6 +47,7 @@ export function renderTemplate({
   serverName,
   tools,
   generator,
+  metadata,
 }: TemplateInput): string {
   const imports = [
     "import { Command } from 'commander';",
@@ -59,6 +62,7 @@ export function renderTemplate({
   const generatorHeaderLiteral = JSON.stringify(generatorHeader);
   const toolHelpLiteral = JSON.stringify(toolHelpLines);
   const embeddedSchemas = JSON.stringify(buildEmbeddedSchemaMap(tools), undefined, 2);
+  const embeddedMetadata = JSON.stringify(metadata, undefined, 2);
   const renderedTools = tools.map((tool) => renderToolCommand(tool, timeoutMs, serverName));
   const toolBlocks = renderedTools.map((entry) => entry.block).join('\n\n');
   const signatureMap = Object.fromEntries(renderedTools.map((entry) => [entry.commandName, entry.tsSignature]));
@@ -71,6 +75,8 @@ const embeddedSchemas = ${embeddedSchemas} as const;
 const embeddedName = ${JSON.stringify(serverName)};
 const generatorInfo = ${generatorHeaderLiteral};
 const generatorTools = ${toolHelpLiteral};
+const embeddedMetadata = ${embeddedMetadata} as const;
+const artifactKind = determineArtifactKind();
 const program = new Command();
 program.name(embeddedName);
 program.description('Standalone CLI generated for the ' + embeddedName + ' MCP server.');
@@ -113,6 +119,14 @@ program.command('list-tools')
   )}.forEach((entry) => {
 \t\t\tconsole.log(' - ' + entry.name + (entry.description ? ' - ' + entry.description : ''));
 \t\t});
+\t});
+
+program
+\t.command('__mcporter_inspect', { hidden: true })
+\t.description('Internal metadata printer for mcporter inspect-cli.')
+\t.action(() => {
+\t\tconst payload = buildMetadataPayload();
+\t\tconsole.log(JSON.stringify(payload, null, 2));
 \t});
 
 program.parseAsync(process.argv).catch((error) => {
@@ -198,6 +212,47 @@ function normalizeEmbeddedServer(server: typeof embeddedServer) {
 \t\t};
 \t}
 \treturn base;
+}
+
+function determineArtifactKind(): 'template' | 'bundle' | 'binary' {
+\tconst scriptPath = typeof process !== 'undefined' && Array.isArray(process.argv) ? process.argv[1] ?? '' : '';
+\tif (scriptPath.endsWith('.ts')) {
+\t\treturn 'template';
+\t}
+\tif (scriptPath.endsWith('.js')) {
+\t\treturn 'bundle';
+\t}
+\treturn 'binary';
+}
+
+function resolveArtifactPath(): string {
+\tif (typeof process !== 'undefined' && Array.isArray(process.argv) && process.argv.length > 1) {
+\t\tconst script = process.argv[1];
+\t\tif (script) {
+\t\t\treturn script;
+\t\t}
+\t}
+\treturn embeddedMetadata.artifact.path;
+}
+
+function buildMetadataPayload() {
+\tconst invocation = { ...embeddedMetadata.invocation };
+\tconst path = resolveArtifactPath();
+\tif (artifactKind === 'template' && path) {
+\t\tinvocation.outputPath = invocation.outputPath ?? path;
+\t} else if (artifactKind === 'bundle' && path) {
+\t\tinvocation.bundle = invocation.bundle ?? path;
+\t} else if (artifactKind === 'binary' && path) {
+\t\tinvocation.compile = invocation.compile ?? path;
+\t}
+\treturn {
+\t\t...embeddedMetadata,
+\t\tartifact: {
+\t\t\tpath,
+\t\t\tkind: artifactKind,
+\t\t},
+\t\tinvocation,
+\t};
 }
 `;
 }

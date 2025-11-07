@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from 'vitest';
 import { UnauthorizedError } from '@modelcontextprotocol/sdk/client/auth.js';
+import { describe, expect, it, vi } from 'vitest';
 
-import { type ServerDefinition } from '../src/config.js';
+import type { ServerDefinition } from '../src/config.js';
 import { __test } from '../src/runtime.js';
 
 const logger = {

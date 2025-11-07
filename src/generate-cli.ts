@@ -6,17 +6,12 @@ import {
   computeCompileTarget,
   resolveBundleTarget,
 } from './cli/generate/artifacts.js';
-import {
-  ensureInvocationDefaults,
-  fetchTools,
-  fileExists,
-  resolveServerDefinition,
-} from './cli/generate/definition.js';
+import { ensureInvocationDefaults, fetchTools, resolveServerDefinition } from './cli/generate/definition.js';
 import { resolveRuntimeKind } from './cli/generate/runtime.js';
 import { readPackageMetadata, writeTemplate } from './cli/generate/template.js';
 import type { ToolMetadata } from './cli/generate/tools.js';
 import { buildToolMetadata, toolsTestHelpers } from './cli/generate/tools.js';
-import { type CliArtifactKind, type CliArtifactMetadata, writeCliMetadata } from './cli-metadata.js';
+import { type CliArtifactMetadata, serializeDefinition } from './cli-metadata.js';
 
 export interface GenerateCliOptions {
   readonly serverRef: string;
@@ -40,6 +35,35 @@ export async function generateCli(
   const tools = await fetchTools(definition, name, options.configPath, options.rootDir);
   const toolMetadata: ToolMetadata[] = tools.map((tool) => buildToolMetadata(tool));
   const generator = await readPackageMetadata();
+  const baseInvocation = ensureInvocationDefaults(
+    {
+      serverRef: options.serverRef,
+      configPath: options.configPath,
+      rootDir: options.rootDir,
+      runtime: runtimeKind,
+      outputPath: options.outputPath,
+      bundle: options.bundle,
+      compile: options.compile,
+      timeoutMs,
+      minify: options.minify ?? false,
+    },
+    definition
+  );
+  const embeddedMetadata: CliArtifactMetadata = {
+    schemaVersion: 1,
+    generatedAt: new Date().toISOString(),
+    generator,
+    server: {
+      name,
+      source: definition.source,
+      definition: serializeDefinition(definition),
+    },
+    artifact: {
+      path: '',
+      kind: 'template',
+    },
+    invocation: baseInvocation,
+  };
 
   let templateTmpDir: string | undefined;
   let templateOutputPath = options.outputPath;
@@ -58,6 +82,7 @@ export async function generateCli(
     serverName: name,
     tools: toolMetadata,
     generator,
+    metadata: embeddedMetadata,
   });
 
   let bundlePath: string | undefined;
@@ -95,68 +120,6 @@ export async function generateCli(
     if (templateTmpDir) {
       await fs.rm(templateTmpDir, { recursive: true, force: true }).catch(() => {});
     }
-  }
-
-  const metadataTargets: Array<{ path: string; kind: CliArtifactKind; invocation: CliArtifactMetadata['invocation'] }> =
-    [];
-  const baseInvocation: CliArtifactMetadata['invocation'] = {
-    serverRef: options.serverRef,
-    configPath: options.configPath,
-    rootDir: options.rootDir,
-    runtime: runtimeKind,
-    outputPath: options.outputPath,
-    bundle: options.bundle,
-    compile: options.compile,
-    timeoutMs,
-    minify: options.minify ?? false,
-  };
-
-  const templatePersisted = !templateTmpDir || Boolean(options.outputPath);
-  if (templatePersisted && (await fileExists(outputPath))) {
-    metadataTargets.push({
-      path: outputPath,
-      kind: 'template',
-      invocation: {
-        ...baseInvocation,
-        outputPath,
-      },
-    });
-  }
-
-  if (bundlePath) {
-    metadataTargets.push({
-      path: bundlePath,
-      kind: 'bundle',
-      invocation: {
-        ...baseInvocation,
-        bundle: bundlePath,
-      },
-    });
-  }
-
-  if (compilePath) {
-    metadataTargets.push({
-      path: compilePath,
-      kind: 'binary',
-      invocation: {
-        ...baseInvocation,
-        compile: compilePath,
-      },
-    });
-  }
-
-  if (metadataTargets.length > 0) {
-    await Promise.all(
-      metadataTargets.map((entry) =>
-        writeCliMetadata({
-          artifactPath: entry.path,
-          kind: entry.kind,
-          generator,
-          server: { name, source: definition.source, definition },
-          invocation: ensureInvocationDefaults(entry.invocation, definition),
-        })
-      )
-    );
   }
 
   return { outputPath: options.outputPath ?? outputPath, bundlePath, compilePath };

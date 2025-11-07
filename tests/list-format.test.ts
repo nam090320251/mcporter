@@ -9,7 +9,7 @@ describe('classifyListError', () => {
     });
     expect(result.category).toBe('auth');
     expect(result.authCommand).toBe('mcporter auth https://example.com/mcp');
-    expect(result.colored).toContain("mcporter auth https://example.com/mcp");
+    expect(result.colored).toContain('mcporter auth https://example.com/mcp');
   });
 
   it('classifies transport errors as offline', () => {

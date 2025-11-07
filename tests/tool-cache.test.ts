@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { Runtime } from '../src/runtime.js';
 import { loadToolMetadata } from '../src/cli/tool-cache.js';
+import type { Runtime } from '../src/runtime.js';
 import { demoTool } from './fixtures/tool-fixtures.js';
 
 function createRuntimeStub(listToolsImpl: Runtime['listTools']): Runtime {

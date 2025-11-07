@@ -2,12 +2,12 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { ServerDefinition } from '../config.js';
 import type { Runtime } from '../runtime.js';
-import { buildToolDoc } from './list-detail-helpers.js';
-import { renderClientModule, renderTypesModule, type EmitMetadata, type ToolDocEntry } from './emit-ts-templates.js';
-import type { ToolMetadata } from './generate/tools.js';
+import { type EmitMetadata, renderClientModule, renderTypesModule, type ToolDocEntry } from './emit-ts-templates.js';
 import { extractGeneratorFlags } from './generate/flag-parser.js';
-import { loadToolMetadata } from './tool-cache.js';
 import { readPackageMetadata } from './generate/template.js';
+import type { ToolMetadata } from './generate/tools.js';
+import { buildToolDoc } from './list-detail-helpers.js';
+import { loadToolMetadata } from './tool-cache.js';
 
 interface EmitTsFlags {
   server?: string;
@@ -26,7 +26,10 @@ interface ParsedEmitTsOptions extends Required<Omit<EmitTsFlags, 'server' | 'out
 export async function handleEmitTs(runtime: Runtime, args: string[]): Promise<void> {
   const options = parseEmitTsArgs(args);
   const definition = getServerDefinition(runtime, options.server);
-  const metadataEntries = await loadToolMetadata(runtime, options.server, { includeSchema: true, autoAuthorize: false });
+  const metadataEntries = await loadToolMetadata(runtime, options.server, {
+    includeSchema: true,
+    autoAuthorize: false,
+  });
   const generator = await readPackageMetadata();
   const metadata: EmitMetadata = {
     server: definition,
@@ -140,7 +143,11 @@ function getServerDefinition(runtime: Runtime, name: string): ServerDefinition {
   }
 }
 
-function buildDocEntries(serverName: string, metadataEntries: ToolMetadata[], includeOptional: boolean): ToolDocEntry[] {
+function buildDocEntries(
+  serverName: string,
+  metadataEntries: ToolMetadata[],
+  includeOptional: boolean
+): ToolDocEntry[] {
   return metadataEntries.map((entry) => {
     const doc = buildToolDoc({
       serverName,

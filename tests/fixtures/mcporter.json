@@ -3,10 +3,7 @@
     "chrome-devtools": {
       "description": "Chrome DevTools protocol bridge for driving local tabs during debugging or automation.",
       "command": "npx",
-      "args": [
-        "-y",
-        "chrome-devtools-mcp@latest"
-      ],
+      "args": ["-y", "chrome-devtools-mcp@latest"],
       "env": {
         "npm_config_loglevel": "error"
       }
@@ -29,10 +26,7 @@
     "playwright": {
       "description": "Playwright MCP server for accessibility-driven automation.",
       "command": "npx",
-      "args": [
-        "-y",
-        "@playwright/mcp@latest"
-      ],
+      "args": ["-y", "@playwright/mcp@latest"],
       "env": {
         "npm_config_loglevel": "error"
       }
@@ -53,10 +47,7 @@
     "signoz": {
       "description": "SigNoz Query MCP server (logs, traces, metrics).",
       "command": "npx",
-      "args": [
-        "-y",
-        "signoz-mcp-server@latest"
-      ],
+      "args": ["-y", "signoz-mcp-server@latest"],
       "env": {
         "SIGNOZ_URL": "${SIGNOZ_URL:-http://localhost:3301}",
         "SIGNOZ_TOKEN": "${SIGNOZ_TOKEN:-}",

@@ -102,10 +102,53 @@ describe('generate helpers', () => {
   });
 
   it('picks example literals and fallbacks consistently', () => {
-    expect(pickExampleLiteral({ type: 'number', exampleValue: '3', property: 'count', cliName: 'count', required: true, placeholder: '<count>' })).toBe('3');
-    expect(pickExampleLiteral({ type: 'array', exampleValue: 'foo,bar', property: 'items', cliName: 'items', required: false, placeholder: '<items>' })).toBe('["foo", "bar"]');
-    expect(pickExampleLiteral({ type: 'string', enumValues: ['alpha', 'beta'], property: 'mode', cliName: 'mode', required: true, placeholder: '<mode>' })).toBe('"alpha"');
-    expect(buildFallbackLiteral({ type: 'string', property: 'issueId', cliName: 'issue-id', required: true, placeholder: '<issue-id>' })).toBe('"example-id"');
-    expect(buildFallbackLiteral({ type: 'array', property: 'labels', cliName: 'labels', required: false, placeholder: '<labels>' })).toBe('["value1"]');
+    expect(
+      pickExampleLiteral({
+        type: 'number',
+        exampleValue: '3',
+        property: 'count',
+        cliName: 'count',
+        required: true,
+        placeholder: '<count>',
+      })
+    ).toBe('3');
+    expect(
+      pickExampleLiteral({
+        type: 'array',
+        exampleValue: 'foo,bar',
+        property: 'items',
+        cliName: 'items',
+        required: false,
+        placeholder: '<items>',
+      })
+    ).toBe('["foo", "bar"]');
+    expect(
+      pickExampleLiteral({
+        type: 'string',
+        enumValues: ['alpha', 'beta'],
+        property: 'mode',
+        cliName: 'mode',
+        required: true,
+        placeholder: '<mode>',
+      })
+    ).toBe('"alpha"');
+    expect(
+      buildFallbackLiteral({
+        type: 'string',
+        property: 'issueId',
+        cliName: 'issue-id',
+        required: true,
+        placeholder: '<issue-id>',
+      })
+    ).toBe('"example-id"');
+    expect(
+      buildFallbackLiteral({
+        type: 'array',
+        property: 'labels',
+        cliName: 'labels',
+        required: false,
+        placeholder: '<labels>',
+      })
+    ).toBe('["value1"]');
   });
 });

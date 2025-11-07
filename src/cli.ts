@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 import fsPromises from 'node:fs/promises';
-import { handleCall as runHandleCall } from './cli/call-command.js';
 import { type EphemeralServerSpec, persistEphemeralServer, resolveEphemeralServer } from './cli/adhoc-server.js';
-import { CliUsageError } from './cli/errors.js';
+import { handleCall as runHandleCall } from './cli/call-command.js';
 import { inferCommandRouting } from './cli/command-inference.js';
-import { extractEphemeralServerFlags } from './cli/ephemeral-flags.js';
-import { findServerByHttpUrl } from './cli/server-lookup.js';
-import { extractGeneratorFlags } from './cli/generate/flag-parser.js';
 import { handleEmitTs } from './cli/emit-ts-command.js';
+import { extractEphemeralServerFlags } from './cli/ephemeral-flags.js';
+import { CliUsageError } from './cli/errors.js';
+import { extractGeneratorFlags } from './cli/generate/flag-parser.js';
 import { handleList } from './cli/list-command.js';
 import { formatSourceSuffix } from './cli/list-format.js';
 import { getActiveLogger, getActiveLogLevel, logError, logInfo, logWarn, setLogLevel } from './cli/logger-context.js';
 import { formatPathForDisplay } from './cli/path-utils.js';
 import { DEBUG_HANG, dumpActiveHandles, terminateChildProcesses } from './cli/runtime-debug.js';
+import { findServerByHttpUrl } from './cli/server-lookup.js';
 import type { CliArtifactMetadata, SerializedServerDefinition } from './cli-metadata.js';
 import { readCliMetadata } from './cli-metadata.js';
 import { generateCli } from './generate-cli.js';
@@ -193,8 +193,8 @@ function parseGenerateFlags(args: string[]): GenerateFlags {
   let output: string | undefined;
   let bundle: boolean | string | undefined;
   let compile: boolean | string | undefined;
-  let runtime: 'node' | 'bun' | undefined = common.runtime;
-  let timeout = common.timeout ?? 30_000;
+  const runtime: 'node' | 'bun' | undefined = common.runtime;
+  const timeout = common.timeout ?? 30_000;
   let minify = false;
 
   let index = 0;
