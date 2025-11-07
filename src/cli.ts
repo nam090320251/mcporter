@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import fsPromises from 'node:fs/promises';
+
 import type { EphemeralServerSpec } from './cli/adhoc-server.js';
 import { handleCall as runHandleCall } from './cli/call-command.js';
 import { inferCommandRouting } from './cli/command-inference.js';
@@ -18,7 +19,7 @@ import { consumeOutputFormat } from './cli/output-format.js';
 import { DEBUG_HANG, dumpActiveHandles, terminateChildProcesses } from './cli/runtime-debug.js';
 import { analyzeConnectionError } from './error-classifier.js';
 import { parseLogLevel } from './logging.js';
-import { MCPORTER_VERSION, createRuntime } from './runtime.js';
+import { createRuntime, MCPORTER_VERSION } from './runtime.js';
 
 export { parseCallArguments } from './cli/call-arguments.js';
 export { handleCall } from './cli/call-command.js';

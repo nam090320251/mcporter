@@ -2,7 +2,12 @@
 
 ## [Unreleased]
 
-_Nothing yet._
+### CLI
+- Embedded the CLI version so Homebrew/Bun builds respond to `mcporter --version` even when `package.json` is unavailable.
+- Added `tests/cli-version.test.ts` to verify `runCli(['--version'])` falls back to the runtime constant whenever package metadata can’t be read.
+
+### Code generation
+- `readPackageMetadata()` now tolerates missing `package.json` files, returning `mcporter@0.0.0` instead of throwing so `generate-cli` works from empty directories.
 
 ## [0.3.1] - 2025-11-07
 
