@@ -31,7 +31,8 @@
 - Focus on user-facing behavior changes; avoid calling out internal testing-only updates.
 
 ## Commit & Pull Request Guidelines
-- Commits should be scoped and written in imperative mood (`Add tsgo lint gate`, `Fix runtime integration transport`).
+- Use Conventional Commits (https://www.conventionalcommits.org/en/v1.0.0/) with the allowed types `feat|fix|refactor|build|ci|chore|docs|style|perf|test`, optional scopes (`type(scope): description`), and `!` for breaking changes (e.g., `feat: Prevent racing of requests`, `chore!: Drop support for iOS 16`).
+- Commits should be scoped and written in imperative mood (`feat: add runtime cache eviction`, `fix(cli): ensure list handles empty config`).
 - Reference related issues in the body (`Refs #123`) and describe observable behavior changes.
 - Pull requests should summarize the change set, list verification steps (`pnpm lint`, `pnpm test`), and include screenshots or logs when CLI output changes.
 
