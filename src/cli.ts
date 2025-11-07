@@ -17,6 +17,7 @@ import { handleList } from './cli/list-command.js';
 import { getActiveLogger, getActiveLogLevel, logError, logInfo, logWarn, setLogLevel } from './cli/logger-context.js';
 import { consumeOutputFormat } from './cli/output-format.js';
 import { DEBUG_HANG, dumpActiveHandles, terminateChildProcesses } from './cli/runtime-debug.js';
+import { boldText, dimText, extraDimText, supportsAnsiColor } from './cli/terminal.js';
 import { analyzeConnectionError } from './error-classifier.js';
 import { parseLogLevel } from './logging.js';
 import { createRuntime, MCPORTER_VERSION } from './runtime.js';
@@ -172,45 +173,144 @@ function printHelp(message?: string): void {
     console.error(message);
     console.error('');
   }
-  console.error(`Usage: mcporter <command> [options]
+  const colorize = supportsAnsiColor;
+  const sections = buildCommandSections(colorize);
+  const globalFlags = formatGlobalFlags(colorize);
+  const quickStart = formatQuickStart(colorize);
+  const footer = formatHelpFooter(colorize);
+  const title = colorize
+    ? `${boldText('mcporter')} ${dimText('— Model Context Protocol CLI & generator')}`
+    : 'mcporter — Model Context Protocol CLI & generator';
+  const lines = [
+    title,
+    '',
+    'Usage: mcporter <command> [options]',
+    '',
+    ...sections,
+    '',
+    globalFlags,
+    '',
+    quickStart,
+    '',
+    footer,
+  ];
+  console.error(lines.join('\n'));
+}
 
-Commands:
-  list [name] [--schema] [--json]    List configured MCP servers (and tools for a server)
-    --json                          Emit machine-readable JSON instead of text output
-  call [selector] [flags]            Call a tool (selector like server.tool)
-    --tail-log                       Tail log output when the tool returns a log file path
-    --output <format>                Output format: auto|text|markdown|json|raw (default auto)
-    --raw                            Shortcut for --output raw
-  auth <name>                        Complete the OAuth flow for a server without listing tools
-  inspect-cli <path> [--json]        Show metadata and regeneration info for a generated CLI artifact
-  generate-cli --server <ref>        Generate a standalone CLI
-    --name <name>                    Supply a friendly name (otherwise inferred)
-    --command <ref>                  MCP command or URL (required without --server)
-    --output <path>                  Override output file path
-    --bundle [path]                  Create a bundled JS file (auto-named when omitted)
-    --compile [path]                 Compile with Bun (implies --bundle); requires Bun
-    --minify                         Minify bundled output
-    --no-minify                      Disable minification when it's enabled by defaults
-    --runtime node|bun               Force runtime selection (auto-detected otherwise)
-    --timeout <ms>                   Override introspection timeout (default 30000)
-    --from <artifact>                Reuse metadata from an existing CLI artifact
-    --dry-run                        Print the resolved generate-cli command without executing (requires --from)
+type HelpEntry = {
+  name: string;
+  summary: string;
+  usage: string;
+};
 
-Global flags:
-  --config <path>                    Path to mcporter.json (defaults to ./config/mcporter.json)
-  --root <path>                      Root directory for stdio command cwd
-  --log-level <debug|info|warn|error>  Adjust CLI log verbosity (defaults to warn)
+type HelpSection = {
+  title: string;
+  entries: HelpEntry[];
+};
 
-mcporter automatically loads servers from ./config/mcporter.json plus any imports it finds from Cursor,
-Claude Code/Desktop, Codex, and other compatible editors—so everything you've already configured is
-ready to use.
+function buildCommandSections(colorize: boolean): string[] {
+  const sections: HelpSection[] = [
+    {
+      title: 'Core commands',
+      entries: [
+        {
+          name: 'list',
+          summary: 'List configured servers (add --schema for tool docs)',
+          usage: 'mcporter list [name] [--schema] [--json]',
+        },
+        {
+          name: 'call',
+          summary: 'Call a tool by selector (server.tool) or HTTP URL; key=value flags supported',
+          usage: 'mcporter call <selector> [key=value ...]',
+        },
+        {
+          name: 'auth',
+          summary: 'Complete OAuth for a server without listing tools',
+          usage: 'mcporter auth <server | url> [--reset]',
+        },
+      ],
+    },
+    {
+      title: 'Generator & tooling',
+      entries: [
+        {
+          name: 'generate-cli',
+          summary: 'Emit a standalone CLI (supports HTTP, stdio, and inline commands)',
+          usage: 'mcporter generate-cli --server <name> | --command <ref> [options]',
+        },
+        {
+          name: 'inspect-cli',
+          summary: 'Show metadata and regen instructions for a generated CLI',
+          usage: 'mcporter inspect-cli <path> [--json]',
+        },
+        {
+          name: 'emit-ts',
+          summary: 'Generate TypeScript client/types for a server',
+          usage: 'mcporter emit-ts <server> --mode client|types [options]',
+        },
+      ],
+    },
+  ];
+  return sections.flatMap((section) => formatCommandSection(section, colorize));
+}
 
-Examples:
-  npx mcporter list
-  npx mcporter linear.list_issues limit:5 orderBy:updatedAt
-  npx mcporter 'https://www.shadcn.io/api/mcp.getComponents()'
-  npx mcporter generate-cli --from dist/context7.js
-`);
+function formatCommandSection(section: HelpSection, colorize: boolean): string[] {
+  const maxNameLength = Math.max(...section.entries.map((entry) => entry.name.length));
+  const header = colorize ? boldText(section.title) : section.title;
+  const lines = [header];
+  section.entries.forEach((entry) => {
+    const paddedName = entry.name.padEnd(maxNameLength);
+    const renderedName = colorize ? boldText(paddedName) : paddedName;
+    const summary = colorize ? dimText(entry.summary) : entry.summary;
+    lines.push(`  ${renderedName}  ${summary}`);
+    lines.push(`    ${extraDimText('usage:')} ${entry.usage}`);
+  });
+  return [...lines, ''];
+}
+
+function formatGlobalFlags(colorize: boolean): string {
+  const title = colorize ? boldText('Global flags') : 'Global flags';
+  const entries = [
+    {
+      flag: '--config <path>',
+      summary: 'Path to mcporter.json (defaults to ./config/mcporter.json)',
+    },
+    {
+      flag: '--root <path>',
+      summary: 'Working directory for stdio servers',
+    },
+    {
+      flag: '--log-level <debug|info|warn|error>',
+      summary: 'Adjust CLI logging (defaults to warn)',
+    },
+  ];
+  const formatted = entries.map((entry) => `  ${entry.flag.padEnd(34)}${entry.summary}`);
+  return [title, ...formatted].join('\n');
+}
+
+function formatQuickStart(colorize: boolean): string {
+  const title = colorize ? boldText('Quick start') : 'Quick start';
+  const entries = [
+    ['mcporter list', 'show configured servers'],
+    ['mcporter list linear --schema', 'view Linear tool docs'],
+    ['mcporter call linear.list_issues limit:5', 'invoke a tool with key=value arguments'],
+    ['mcporter generate-cli --command https://host/mcp --compile ./my-cli', 'build a standalone CLI/binary'],
+  ];
+  const formatted = entries.map(([cmd, note]) => {
+    const comment = colorize ? dimText(`# ${note}`) : `# ${note}`;
+    return `  ${cmd}\n    ${comment}`;
+  });
+  return [title, ...formatted].join('\n');
+}
+
+function formatHelpFooter(colorize: boolean): string {
+  const pointer = 'Run `mcporter <command> --help` for detailed flags.';
+  const autoLoad =
+    'mcporter auto-loads servers from ./config/mcporter.json and editor imports (Cursor, Claude, Codex, etc.).';
+  if (!colorize) {
+    return `${pointer}\n${autoLoad}`;
+  }
+  return `${dimText(pointer)}\n${extraDimText(autoLoad)}`;
 }
 
 async function printVersion(): Promise<void> {

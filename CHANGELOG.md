@@ -7,7 +7,7 @@ _Nothing yet._
 
 ### CLI
 - Embedded the CLI version so Homebrew/Bun builds respond to `mcporter --version` even when `package.json` is unavailable.
-- Added `tests/cli-version.test.ts` to verify `runCli(['--version'])` falls back to the runtime constant whenever package metadata can’t be read.
+- Revamped `mcporter --help` to mirror the richer list/call formatting (name + summary rows, grouped sections, quick-start examples, and ANSI colors when TTYs are detected).
 
 ### Code generation
 - Generated binaries now default to the current working directory (using the inferred server name) when `--compile` is provided without a path, and automatically append a numeric suffix when the target already exists.
