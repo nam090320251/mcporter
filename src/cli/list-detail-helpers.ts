@@ -6,6 +6,11 @@ export interface SelectDisplayOptionsResult {
   hiddenOptions: GeneratedOption[];
 }
 
+export interface FlagUsageExtra {
+  text: string;
+  required?: boolean;
+}
+
 export interface ToolDocInput {
   serverName: string;
   toolName: string;
@@ -15,12 +20,14 @@ export interface ToolDocInput {
   requiredOnly: boolean;
   colorize?: boolean;
   exampleMaxLength?: number;
+  flagExtras?: FlagUsageExtra[];
 }
 
 export interface ToolDocModel {
   docLines?: string[];
   signature: string;
   tsSignature: string;
+  flagUsage: string;
   optionalSummary?: string;
   examples: string[];
   displayOptions: GeneratedOption[];
@@ -278,11 +285,13 @@ export function buildToolDoc(input: ToolDocInput): ToolDocModel {
     requiredOnly,
     colorize = true,
     exampleMaxLength,
+    flagExtras,
   } = input;
   const { displayOptions, hiddenOptions } = selectDisplayOptions(options, requiredOnly);
   const docLines = buildDocComment(description, options, { colorize });
   const signature = formatFunctionSignature(toolName, displayOptions, outputSchema, { colorize });
   const tsSignature = formatFunctionSignature(toolName, displayOptions, outputSchema, { colorize: false });
+  const flagUsage = formatFlagUsage(displayOptions, flagExtras, { colorize });
   const optionalSummary = hiddenOptions.length > 0 ? formatOptionalSummary(hiddenOptions, { colorize }) : undefined;
   const callExample = formatCallExpressionExample(
     serverName,
@@ -296,11 +305,42 @@ export function buildToolDoc(input: ToolDocInput): ToolDocModel {
     docLines,
     signature,
     tsSignature,
+    flagUsage,
     optionalSummary,
     examples,
     displayOptions,
     hiddenOptions,
   };
+}
+
+export function formatFlagUsage(
+  options: GeneratedOption[],
+  extras?: FlagUsageExtra[],
+  opts?: { colorize?: boolean }
+): string {
+  const colorize = opts?.colorize !== false;
+  const entries: Array<{ text: string; required: boolean }> = options.map((option) => ({
+    text: `--${option.cliName} ${option.placeholder}`.trim(),
+    required: option.required,
+  }));
+  if (extras) {
+    entries.push(
+      ...extras
+        .map((extra) => ({
+          text: extra.text.trim(),
+          required: Boolean(extra.required),
+        }))
+        .filter((entry) => entry.text.length > 0)
+    );
+  }
+  const parts = entries
+    .filter((entry) => entry.text.length > 0)
+    .map((entry) => (entry.required ? entry.text : `[${entry.text}]`));
+  if (parts.length === 0) {
+    return '';
+  }
+  const rendered = parts.join(' ');
+  return colorize ? extraDimText(rendered) : rendered;
 }
 
 function formatInlineParameter(option: GeneratedOption, colorize: boolean): string {

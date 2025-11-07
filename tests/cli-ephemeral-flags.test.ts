@@ -16,4 +16,16 @@ describe('extractEphemeralServerFlags', () => {
     expect(spec).toEqual({ stdioCommand: 'bun run ./server.ts', stdioArgs: ['--watch'] });
     expect(args).toEqual(['call']);
   });
+
+  it('records name/description/persist metadata', () => {
+    const args = ['--http-url', 'https://mcp.example.com/mcp', '--name', 'example', '--description', 'Test', '--persist', 'config.json'];
+    const spec = extractEphemeralServerFlags(args);
+    expect(spec).toEqual({
+      httpUrl: 'https://mcp.example.com/mcp',
+      name: 'example',
+      description: 'Test',
+      persistPath: 'config.json',
+    });
+    expect(args).toEqual([]);
+  });
 });

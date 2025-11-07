@@ -28,13 +28,14 @@ The goals below align `mcporter list`, the TypeScript CLI generator, and any fut
   2. Update `list-detail-helpers.ts` and `renderToolCommand()` to call this shared helper.
   3. Expand helper tests to cover arrays/defaults/enum cases once, keeping both consumers aligned.
 
-## 4. Usage String Builder Parity
+## 4. Usage String Builder Parity *(Completed)*
 
-- **Problem**: Commander `.usage()` still shows `--flags`, while the rest of the tooling leans on pseudo-TS signatures.
-- **Plan**:
-  1. Create `buildCliUsage(options: GeneratedOption[], { mode: 'flags' | 'ts' })` that emits both forms.
-  2. Use TS mode for `commandTerm`/`help`, but keep flag mode for backwards-compatible CLI docs.
-  3. Export the helper so `mcporter list` can reuse it when we eventually add `--flags` view.
+- **Problem**: Commander `.usage()` strings were hand-built (and always listed every flag) while `mcporter list` used the pseudo-TS formatter, so the two could diverge.
+- **What we did**:
+  1. Added `formatFlagUsage()` + `flagExtras` support inside `buildToolDoc`, so the same selector that powers TS signatures now emits the flag-based usage line.
+  2. Updated `renderToolCommand()` to consume `doc.flagUsage` for both `.summary()` and `.usage()`; optional summaries stay unified through `buildToolDoc`.
+  3. Added helper unit tests covering mixed required/optional flags and extra entries (e.g., `--raw <json>`).
+- **Next**: Expose the shared usage string in `mcporter list` once we add a `--flags` view.
 
 ## 5. ToolDocModel Abstraction
 

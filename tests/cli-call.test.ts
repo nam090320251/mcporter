@@ -259,6 +259,46 @@ describe('CLI call argument parsing', () => {
     });
   });
 
+  it('errors when too many positional arguments are supplied', async () => {
+    const { handleCall } = await cliModulePromise;
+    const callTool = vi.fn();
+    const listTools = vi.fn().mockResolvedValue([
+      {
+        name: 'resolve-library-id',
+        description: 'Lookup',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            libraryName: { type: 'string' },
+          },
+          required: ['libraryName'],
+        },
+      },
+    ]);
+    const runtime = {
+      callTool,
+      listTools,
+      close: vi.fn().mockResolvedValue(undefined),
+    } as unknown as Awaited<ReturnType<typeof import('../src/runtime.js')['createRuntime']>>;
+
+    await expect(handleCall(runtime, ['context7.resolve-library-id("a", "b")'])).rejects.toThrow(
+      /Too many positional arguments/
+    );
+  });
+
+  it('errors when schema data is unavailable for positional arguments', async () => {
+    const { handleCall } = await cliModulePromise;
+    const runtime = {
+      callTool: vi.fn(),
+      listTools: vi.fn().mockResolvedValue([{ name: 'resolve-library-id' }]),
+      close: vi.fn().mockResolvedValue(undefined),
+    } as unknown as Awaited<ReturnType<typeof import('../src/runtime.js')['createRuntime']>>;
+
+    await expect(handleCall(runtime, ['context7.resolve-library-id("a")'])).rejects.toThrow(
+      /does not expose an input schema/
+    );
+  });
+
   it('registers an ad-hoc HTTP server when --http-url is provided', async () => {
     const { handleCall } = await cliModulePromise;
     const definitions = new Map<string, ServerDefinition>();

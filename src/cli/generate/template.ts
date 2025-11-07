@@ -85,6 +85,7 @@ program.configureHelp({
 \t\treturn commandSignatures[term] ?? cmd.name();
 \t},
 });
+program.showSuggestionAfterError(true);
 program.addHelpText('after', () => {
 \tconst sections: string[] = [];
 \tif (generatorTools) {
@@ -209,19 +210,12 @@ export function renderToolCommand(
   const commandName = tool.tool.name.replace(/[^a-zA-Z0-9-]/g, '-');
   const description = tool.tool.description ?? `Invoke the ${tool.tool.name} tool.`;
   const optionLines = tool.options.map((option) => renderOption(option)).join('\n');
-  const usageParts = tool.options.map((option) =>
-    option.required ? `--${option.cliName} ${option.placeholder}` : `[--${option.cliName} ${option.placeholder}]`
-  );
-  usageParts.push('[--raw <json>]');
-  const usageLine = usageParts.length ? usageParts.join(' ') : '';
-  const usageSnippet = usageLine ? `.usage(${JSON.stringify(usageLine)})\n` : '';
   const buildArgs = tool.options
     .map((option) => {
       const source = `cmdOpts.${option.property}`;
       return `if (${source} !== undefined) args.${option.property} = ${source};`;
     })
     .join('\n\t\t');
-  const signature = usageLine ? `${commandName} ${usageLine}` : commandName;
   const doc = buildToolDoc({
     serverName,
     toolName: tool.tool.name,
@@ -230,18 +224,23 @@ export function renderToolCommand(
     options: tool.options,
     requiredOnly: true,
     colorize: false,
+    flagExtras: [{ text: '--raw <json>' }],
   });
+  const flagUsage = doc.flagUsage;
+  const summary = flagUsage ? `${commandName} ${flagUsage}` : commandName;
+  const signature = summary;
+  const usageSnippet = flagUsage ? `.usage(${JSON.stringify(flagUsage)})\n` : '';
   const tsSignature = doc.tsSignature;
   const exampleText = doc.examples[0];
   const exampleSnippet = exampleText
     ? `\n\t.addHelpText('after', () => '\\nExample:\\n  ' + ${JSON.stringify(exampleText)})`
     : '';
   const optionalSnippet = doc.optionalSummary
-    ? `\n\t.addHelpText('afterAll', () => '\\n${doc.optionalSummary}\\n')`
+    ? `\n\t.addHelpText('afterAll', () => '\\n' + ${JSON.stringify(doc.optionalSummary)} + '\\n')`
     : '';
   const block = `program
 \t.command(${JSON.stringify(commandName)})
-\t.summary(${JSON.stringify(signature)})
+\t.summary(${JSON.stringify(summary)})
 \t.description(${JSON.stringify(description)})
 ${usageSnippet ? `\t${usageSnippet}` : ''}\t.option('--raw <json>', 'Provide raw JSON arguments to the tool, bypassing flag parsing.')
 ${optionLines ? `\n${optionLines}` : ''}
@@ -264,7 +263,7 @@ ${optionLines ? `\n${optionLines}` : ''}
 \t\t} finally {
 \t\t\tawait runtime.close(serverName).catch(() => {});
 \t\t}
-\t})${exampleSnippet};`;
+\t})${exampleSnippet}${optionalSnippet};`;
   return { block, commandName, signature, tsSignature };
 }
 

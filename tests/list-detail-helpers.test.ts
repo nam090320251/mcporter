@@ -4,6 +4,7 @@ import {
   buildDocComment,
   buildToolDoc,
   formatCallExpressionExample,
+  formatFlagUsage,
   formatFunctionSignature,
   formatOptionalSummary,
   selectDisplayOptions,
@@ -70,6 +71,17 @@ describe('formatOptionalSummary', () => {
   });
 });
 
+describe('formatFlagUsage', () => {
+  it('renders required, optional, and extra flags consistently', () => {
+    const options = [
+      baseOption({ property: 'title', cliName: 'title', required: true, placeholder: '<title>' }),
+      baseOption({ property: 'body', cliName: 'body', required: false, placeholder: '<body>' }),
+    ];
+    const usage = formatFlagUsage(options, [{ text: '--raw <json>' }], { colorize: false });
+    expect(usage).toBe('--title <title> [--body <body>] [--raw <json>]');
+  });
+});
+
 describe('formatFunctionSignature', () => {
   it('renders uncolored TypeScript-style signatures when colorize is false', () => {
     const signature = formatFunctionSignature(
@@ -104,9 +116,27 @@ describe('formatCallExpressionExample', () => {
 describe('buildToolDoc', () => {
   it('produces reusable doc blocks and summaries', () => {
     const options = [
-      baseOption({ property: 'issueId', description: 'Issue identifier', required: true }),
-      baseOption({ property: 'body', description: 'Markdown body', required: true }),
-      baseOption({ property: 'parentId', description: 'Optional parent', required: false }),
+      baseOption({
+        property: 'issueId',
+        cliName: 'issue-id',
+        placeholder: '<issue-id>',
+        description: 'Issue identifier',
+        required: true,
+      }),
+      baseOption({
+        property: 'body',
+        cliName: 'body',
+        placeholder: '<body>',
+        description: 'Markdown body',
+        required: true,
+      }),
+      baseOption({
+        property: 'parentId',
+        cliName: 'parent-id',
+        placeholder: '<parent-id>',
+        description: 'Optional parent',
+        required: false,
+      }),
     ];
     const doc = buildToolDoc({
       serverName: 'linear',
@@ -119,6 +149,7 @@ describe('buildToolDoc', () => {
     });
     expect(doc.signature).toBe('function create_comment(issueId: string, body: string, parentId?: string): Comment;');
     expect(doc.tsSignature).toBe('function create_comment(issueId: string, body: string, parentId?: string): Comment;');
+    expect(stripAnsi(doc.flagUsage)).toBe('--issue-id <issue-id> --body <body> [--parent-id <parent-id>]');
     expect(doc.optionalSummary).toBeUndefined();
     expect(doc.examples[0]).toContain('mcporter call linear.create_comment');
     expect(doc.hiddenOptions).toHaveLength(0);
