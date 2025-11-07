@@ -42,6 +42,15 @@ Key details:
 - **Error feedback**: invalid keys, unsupported expressions, or parser failures bubble up with actionable messages (`Unsupported argument expression: Identifier`, `Unable to parse call expression: …`).
 - **Server selection**: You can embed the server in the expression (`linear.create_comment(...)`) or pass it separately (`--server linear create_comment(...)`).
 
+## HTTP Selectors & Ad-hoc URLs
+
+- You can skip `--server` entirely by pasting the MCP endpoint + tool name directly: `mcporter call 'https://www.shadcn.io/api/mcp.getComponent(component: "vortex")'`.
+- Mcporter strips the `.tool` suffix to derive the base server URL, reuses any configured definition that already points at that endpoint, and only registers a new ad-hoc server when necessary (`--allow-http` still guards plain HTTP URLs).
+- Function-call arguments continue to work in this form; if you omit parentheses you can still append `key=value` pairs (`https://.../mcp.getComponent component=vortex`).
+- This is especially handy for copy/pasting tool listings or experimenting with anonymous HTTP MCP servers—you get the same parsing, auto-correction, and logging pipeline as the regular `server.tool` syntax.
+- Protocols are optional; bare domains such as `shadcn.io/api/mcp.getComponents` automatically assume `https://`. If you really need plain HTTP, spell out `http://` and pass `--allow-http`.
+- Hostname comparisons ignore a leading `www.` so `https://shadcn.io/api/mcp` and `https://www.shadcn.io/api/mcp` resolve to the same configured server when possible.
+
 ## Tips
 
 - Use `--args '{ "issueId": "LNR-123" }'` if you already have JSON payloads—nothing changed for that workflow.
