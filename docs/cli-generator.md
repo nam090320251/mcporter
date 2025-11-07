@@ -79,10 +79,10 @@ chmod +x context7
 
 ## Artifact Metadata & Regeneration
 
-- Every generated artifact writes `<artifact>.metadata.json` alongside the output. The file records the generator version, resolved server definition, and the exact `generate-cli` flags we used (runtime, bundle/compile targets, timeout, minify, etc.).
-- `mcporter inspect-cli <artifact>` reads that metadata and prints a summary (pass `--json` to emit the raw payload). The output includes a ready-to-run `generate-cli` command as well as the simpler `mcporter regenerate-cli` wrapper.
+- Every generated artifact embeds its metadata (generator version, resolved server definition, invocation flags). A hidden `__mcporter_inspect` subcommand prints the payload without contacting the MCP server, so binaries remain self-describing even after being copied to another machine.
+- `mcporter inspect-cli <artifact>` shells out to that embedded command and prints a human summary (pass `--json` for raw output). The summary includes a ready-to-run `generate-cli` command plus the simpler `mcporter regenerate-cli` helper.
 - `mcporter regenerate-cli <artifact>` replays the stored invocation against the latest mcporter build. Flags such as `--dry-run`, `--server`, `--config`, `--runtime`, `--timeout`, `--minify`, `--bundle`, `--compile`, and `--output` let you override pieces of the stored metadata when necessary.
-- Metadata is emitted for templates, bundles, and compiled binaries (when they persist on disk), so any artifact can be refreshed after a generator upgrade.
+- Because the metadata lives inside the artifact, any template, bundle, or compiled binary can be refreshed after a generator upgrade without juggling sidecar files.
 
 
 

@@ -259,7 +259,6 @@ npx mcporter generate-cli \
 # Outputs:
 #   context7.ts        (TypeScript template with embedded schemas)
 #   context7.js        (bundled CLI via esbuild)
-#   context7.js.metadata.json
 ```
 
 - `--name` overrides the inferred CLI name.
@@ -269,7 +268,7 @@ npx mcporter generate-cli \
 - `--runtime bun|node` picks the runtime for generated code (Bun required for `--compile`).
 - Add `--compile` to emit a Bun-compiled binary; mcporter cleans up intermediate bundles when you omit `--bundle`.
 
-Every artifact is paired with metadata capturing the generator version, resolved server definition, and invocation flags. Use:
+Every artifact embeds regeneration metadata (generator version, resolved server definition, invocation flags). Use:
 
 ```
 npx mcporter inspect-cli dist/context7.js     # human-readable summary
