@@ -325,6 +325,60 @@ function buildMetadataPayload() {
 \t\tinvocation,
 \t};
 }
+
+async function ensureRuntime(params: {
+\tconfig?: string;
+\tserver?: string;
+\ttimeout: number;
+}): Promise<{ runtime: Awaited<ReturnType<typeof createRuntime>>; serverName: string; usingEmbedded: boolean }> {
+\tif (params.config || params.server) {
+\t\tconst targetServer = params.server ?? embeddedName;
+\t\tconst runtime = await createRuntime({ configPath: params.config });
+\t\treturn { runtime, serverName: targetServer, usingEmbedded: false };
+\t}
+\tconst runtime = await createRuntime({
+\t\tservers: [normalizeEmbeddedServer(embeddedServer)],
+\t});
+\treturn { runtime, serverName: embeddedName, usingEmbedded: true };
+}
+
+async function invokeWithTimeout<T>(call: Promise<T>, timeout: number): Promise<T> {
+\tif (!Number.isFinite(timeout) || timeout <= 0) {
+\t\treturn await call;
+\t}
+\tlet timer: ReturnType<typeof setTimeout> | undefined;
+\ttry {
+\t\treturn await Promise.race([
+\t\t\tcall,
+\t\t\tnew Promise<never>((_, reject) => {
+\t\t\t\ttimer = setTimeout(() => {
+\t\t\t\t\treject(new Error('Call timed out after ' + timeout + 'ms.'));
+\t\t\t\t}, timeout);
+\t\t\t}),
+\t\t]);
+\t} finally {
+\t\tif (timer) {
+\t\t\tclearTimeout(timer);
+\t\t}
+\t}
+}
+
+async function runCli(): Promise<void> {
+\tconst args = process.argv.slice(2);
+\tif (args.length === 0) {
+\t\tprogram.outputHelp();
+\t\treturn;
+\t}
+\tawait program.parseAsync(process.argv);
+}
+
+if (process.env.MCPORTER_DISABLE_AUTORUN !== '1') {
+\trunCli().catch((error) => {
+\t\tconst message = error instanceof Error ? error.message : String(error);
+\t\tconsole.error(message);
+\t\tprocess.exit(1);
+\t});
+}
 `;
 }
 

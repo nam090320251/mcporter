@@ -27,8 +27,8 @@ export type {
 
 export async function loadServerDefinitions(options: LoadConfigOptions = {}): Promise<ServerDefinition[]> {
   const rootDir = options.rootDir ?? process.cwd();
-  const configPath = resolveConfigPath(options.configPath, rootDir);
-  const config = await readConfigFile(configPath);
+  const { path: configPath, explicit } = resolveConfigPath(options.configPath, rootDir);
+  const config = await readConfigFile(configPath, explicit);
 
   const merged = new Map<string, { raw: RawEntry; baseDir: string; source: ServerSource }>();
 
@@ -75,14 +75,25 @@ export async function loadServerDefinitions(options: LoadConfigOptions = {}): Pr
   return servers;
 }
 
-function resolveConfigPath(configPath: string | undefined, rootDir: string): string {
+function resolveConfigPath(configPath: string | undefined, rootDir: string): { path: string; explicit: boolean } {
   if (configPath) {
-    return path.resolve(configPath);
+    return { path: path.resolve(configPath), explicit: true };
   }
-  return path.resolve(rootDir, 'config', 'mcporter.json');
+  return { path: path.resolve(rootDir, 'config', 'mcporter.json'), explicit: false };
 }
 
-async function readConfigFile(configPath: string): Promise<RawConfig> {
-  const buffer = await fs.readFile(configPath, 'utf8');
-  return RawConfigSchema.parse(JSON.parse(buffer));
+async function readConfigFile(configPath: string, explicit: boolean): Promise<RawConfig> {
+  try {
+    const buffer = await fs.readFile(configPath, 'utf8');
+    return RawConfigSchema.parse(JSON.parse(buffer));
+  } catch (error) {
+    if (!explicit && isErrno(error, 'ENOENT')) {
+      return { mcpServers: {}, imports: undefined };
+    }
+    throw error;
+  }
+}
+
+function isErrno(error: unknown, code: string): error is NodeJS.ErrnoException {
+  return Boolean(error && typeof error === 'object' && (error as NodeJS.ErrnoException).code === code);
 }

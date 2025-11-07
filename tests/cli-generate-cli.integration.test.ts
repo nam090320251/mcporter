@@ -110,7 +110,7 @@ describe('mcporter CLI integration', () => {
     await new Promise<void>((resolve, reject) => {
       execFile(
         process.execPath,
-        [CLI_ENTRY, 'generate-cli', '--command', baseUrl.toString(), '--bundle', bundlePath],
+        [CLI_ENTRY, 'generate-cli', '--command', baseUrl.toString(), '--bundle', bundlePath, '--runtime', 'node'],
         {
           cwd: tempDir,
           env: { ...process.env, MCPORTER_NO_FORCE_EXIT: '1' },
@@ -127,6 +127,16 @@ describe('mcporter CLI integration', () => {
 
     const stats = await fs.stat(bundlePath);
     expect(stats.isFile()).toBe(true);
+    const helpOutput = await new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+      execFile(process.execPath, [bundlePath], { env: process.env }, (error, stdout, stderr) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve({ stdout, stderr });
+      });
+    });
+    expect(helpOutput.stdout).toMatch(/Usage: .+ <command> \[options]/);
     await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
   });
 
@@ -172,7 +182,17 @@ describe('mcporter CLI integration', () => {
         resolve({ stdout, stderr });
       });
     });
-    expect(stdout).toContain('Ping - Simple health check');
+    expect(stdout.toLowerCase()).toContain('ping - simple health check');
+    const helpOutput = await new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+      execFile(bundlePath, [], { env: process.env }, (error, stdout, stderr) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve({ stdout, stderr });
+      });
+    });
+    expect(helpOutput.stdout).toMatch(/Usage: .+ <command> \[options]/);
     await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
   });
 
@@ -219,7 +239,17 @@ describe('mcporter CLI integration', () => {
         resolve({ stdout, stderr });
       });
     });
-    expect(stdout).toContain('ping - Simple health check');
+    expect(stdout.toLowerCase()).toContain('ping - simple health check');
+    const helpOutput = await new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+      execFile(binaryPath, [], { env: process.env }, (error, stdout, stderr) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve({ stdout, stderr });
+      });
+    });
+    expect(helpOutput.stdout).toMatch(/Usage: .+ <command> \[options]/);
 
     await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
   });
@@ -267,7 +297,17 @@ describe('mcporter CLI integration', () => {
         resolve({ stdout, stderr });
       });
     });
-    expect(stdout).toContain('Ping - Simple health check');
+    expect(stdout.toLowerCase()).toContain('ping - simple health check');
+    const helpOutput = await new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+      execFile(binaryPath, [], { env: process.env }, (error, stdout, stderr) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve({ stdout, stderr });
+      });
+    });
+    expect(helpOutput.stdout).toMatch(/Usage: .+ <command> \[options]/);
 
     await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
   });

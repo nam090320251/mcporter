@@ -16,6 +16,8 @@
 ### CLI
 - Embedded the CLI version so Homebrew/Bun builds respond to `mcporter --version` even when `package.json` is unavailable.
 - Revamped `mcporter --help` to mirror the richer list/call formatting (name + summary rows, grouped sections, quick-start examples, and ANSI colors when TTYs are detected).
+- Fixed `mcporter list` so it no longer errors when `config/mcporter.json` is absent—fresh installs now run without creating config files, and a regression test guards the optional-config flow.
+- Generated standalone CLIs now print the full help menu (same grouped layout as the main CLI) when invoked without arguments, matching the behavior of `mcporter` itself.
 
 ### Code generation
 - Generated binaries now default to the current working directory (using the inferred server name) when `--compile` is provided without a path, and automatically append a numeric suffix when the target already exists.
