@@ -110,7 +110,7 @@ async function readConfigFile(configPath: string, explicit: boolean): Promise<Ra
     return RawConfigSchema.parse(JSON.parse(buffer));
   } catch (error) {
     if (!explicit && isErrno(error, 'ENOENT')) {
-      return { mcpServers: {}, imports: [] };
+      return { mcpServers: {} };
     }
     throw error;
   }

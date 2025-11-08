@@ -4,6 +4,12 @@
 
 _No changes yet._
 
+## [0.4.1] - 2025-11-08
+
+### CLI & runtime
+- Fixed the fallback when `config/mcporter.json` is missing so `mcporter list` continues to import Cursor/Claude/Codex/etc. configs even when you run the CLI outside a repo that defines its own config, matching the 0.3.x behavior.
+- Added regression coverage that exercises the “no config file” path to ensure future changes keep importing user-level MCP servers.
+
 ## [0.4.0] - 2025-11-08
 
 ### CLI & runtime

@@ -149,4 +149,19 @@ describe('config imports', () => {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }
   });
+
+  it('uses default imports even when config/mcporter.json is missing', async () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'mcporter-no-config-'));
+    try {
+      const servers = await loadServerDefinitions({ rootDir: tempRoot });
+      const codexOnly = servers.find((server) => server.name === 'codex-only');
+      expect(codexOnly).toBeDefined();
+      expect(codexOnly?.source).toEqual({
+        kind: 'import',
+        path: path.join(ensureFakeHomeDir(), '.codex', 'config.toml'),
+      });
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
 });
