@@ -1,3 +1,9 @@
+---
+summary: 'Living list of mcporter limitations, hosted MCP quirks, and upstream gaps.'
+read_when:
+  - 'Triaging a bug that might already be documented'
+---
+
 # Known Issues
 
 This file tracks limitations that users regularly run into. Most of these require upstream cooperation or larger refactors—feel free to reference this when triaging bugs.

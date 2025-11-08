@@ -1,3 +1,9 @@
+---
+summary: 'Explains mcporter call’s typo heuristics, auto-correction thresholds, and suggestion behavior.'
+read_when:
+  - 'Tool invocations fail due to misspelled names'
+---
+
 # Call Command Auto-Correction
 
 `mcporter call` aims to help when a tool name is *almost* correct without hiding real mistakes.

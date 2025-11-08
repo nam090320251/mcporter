@@ -1,3 +1,9 @@
+---
+summary: 'Reference for mcporter call argument styles, CLI signatures, and structured output modes.'
+read_when:
+  - 'Working on call CLI UX or documenting invocation examples'
+---
+
 # Call Syntax Reference
 
 `mcporter call` now understands two complementary styles:

@@ -1,3 +1,9 @@
+---
+summary: 'Notes on OAuth scope expectations for hosted MCP servers (e.g., Supabase) and why mcporter requests currently fail.'
+read_when:
+  - 'Investigating OAuth errors or scope negotiation problems'
+---
+
 # OAuth Notes & Hosted MCP Compatibility
 
 ## MCP Spec Expectations

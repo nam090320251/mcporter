@@ -1,3 +1,9 @@
+---
+summary: 'How to wrap mcporter commands in tmux sessions to monitor hangs and capture output.'
+read_when:
+  - 'Debugging long-running commands or needing persistent logs'
+---
+
 # tmux Hang Diagnostics
 
 Use `tmux` to verify whether a CLI command actually exits or is stalled on open handles. This keeps the main shell free while you inspect logs.

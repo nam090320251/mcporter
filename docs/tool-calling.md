@@ -1,3 +1,9 @@
+---
+summary: 'Cheatsheet for the various mcporter call argument syntaxes and best practices.'
+read_when:
+  - 'Designing or debugging tool invocation UX'
+---
+
 # Tool Calling Cheatsheet
 
 mcporter accepts multiple argument styles so you can match whatever feels most natural in your shell or script. Every style feeds the same validation pipeline (schema-driven type coercion, required-field checks, enum hints), so pick the one that's easiest to type.

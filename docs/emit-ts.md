@@ -1,3 +1,9 @@
+---
+summary: 'How to generate `.d.ts` files or typed client helpers with mcporter emit-ts.'
+read_when:
+  - 'Adding new emit-ts behavior or troubleshooting generated clients'
+---
+
 # `mcporter emit-ts`
 
 `mcporter emit-ts` turns a configured MCP server into TypeScript artifacts so

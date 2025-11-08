@@ -1,3 +1,9 @@
+---
+summary: 'Goals and requirements for mcporter generate-cli, including outputs, runtimes, and schema-aware UX.'
+read_when:
+  - 'Changing generate-cli behavior or bundler integrations'
+---
+
 # CLI Generator Plan
 
 Default behavior: generating `<server>.ts` in the working directory if no output path is provided. Bundling is opt-in via `--bundle` and produces a single JS file with shebang; otherwise we emit TypeScript targeting Node.js. Rolldown handles bundling by default unless the runtime resolves to Bun—in that case Bun’s native bundler is selected automatically (still requires `--runtime bun` or Bun auto-detection); `--bundler` lets you override either choice.

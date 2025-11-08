@@ -1,3 +1,9 @@
+---
+summary: 'Quick reference for mcporter subcommands, their arguments, and shared global flags.'
+read_when:
+  - 'Need a refresher on available CLI commands'
+---
+
 # mcporter CLI Reference
 
 A quick reference for the primary `mcporter` subcommands. Each command inherits

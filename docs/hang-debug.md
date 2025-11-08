@@ -1,3 +1,9 @@
+---
+summary: 'Checklist for diagnosing mcporter commands that never exit, using tmux and active-handle dumps.'
+read_when:
+  - 'Seeing the CLI hang after tool completion'
+---
+
 # Debugging Hanging mcporter Calls
 
 When `mcporter call` prints a tool response but the process never exits, it

@@ -1,3 +1,9 @@
+---
+summary: 'Mapping from the legacy `pnpm mcp:*` scripts to the modern mcporter CLI.'
+read_when:
+  - 'Helping teammates migrate old pnpm workflows to mcporter'
+---
+
 # Migrating from `pnpm mcp:*`
 
 The legacy `pnpm mcp:*` helpers map directly onto the `mcporter` CLI.

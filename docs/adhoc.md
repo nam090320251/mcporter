@@ -1,3 +1,9 @@
+---
+summary: 'How to use mcporter’s ad-hoc HTTP/stdio flags to try MCP servers without editing config files.'
+read_when:
+  - 'Exploring or debugging unknown MCP endpoints'
+---
+
 # Ad-hoc MCP Servers
 
 mcporter is gaining support for "just try it" workflows where you point the CLI at a raw MCP endpoint without first editing a config file. This doc tracks the behavior and heuristics we use to make that experience smooth while keeping the runtime predictable.

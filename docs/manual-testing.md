@@ -1,3 +1,9 @@
+---
+summary: 'Tmux-based manual testing recipe for exercising mcporter against real MCP servers.'
+read_when:
+  - 'Need to reproduce a bug or verify CLI output by hand'
+---
+
 # Manual Testing Harness
 
 When we need to sanity-check CLI flows against real MCP servers (or reproduce bugs by hand), use this repeatable harness. Everything runs under `tmux` so long-running commands can be inspected without blocking the current shell.

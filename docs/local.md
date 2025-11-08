@@ -1,3 +1,9 @@
+---
+summary: 'How to run mcporter directly from the repo (tsx, tsx --watch, built artifacts) without npx.'
+read_when:
+  - 'Setting up a local development loop for this repo'
+---
+
 # Running mcporter Locally
 
 You don’t need `npx` every time—here are the three local entry points we use while developing mcporter itself.

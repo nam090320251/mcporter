@@ -1,3 +1,9 @@
+---
+summary: 'Status tracker for post-launch refactors, shared utilities, and remaining cleanup tasks.'
+read_when:
+  - 'Scoping engineering work beyond immediate feature changes'
+---
+
 # Next-Step Refactor Checklist
 
 This doc tracks remaining reuse/refactor work now that the original plan is done.
