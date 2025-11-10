@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ServerDefinition } from '../src/config.js';
-import type { CallOptions, ListToolsOptions, Runtime } from '../src/runtime.js';
 import { createKeepAliveRuntime } from '../src/daemon/runtime-wrapper.js';
+import type { CallOptions, ListToolsOptions, Runtime } from '../src/runtime.js';
 
 class FakeRuntime implements Runtime {
   private readonly definitions: ServerDefinition[];
@@ -34,16 +34,16 @@ class FakeRuntime implements Runtime {
     // no-op for tests
   }
 
-  async listTools(server: string, options?: ListToolsOptions): Promise<ReturnType<Runtime['listTools']>> {
-    return this.listToolsMock(server, options);
+  async listTools(server: string, options?: ListToolsOptions): Promise<Awaited<ReturnType<Runtime['listTools']>>> {
+    return await this.listToolsMock(server, options);
   }
 
   async callTool(server: string, toolName: string, options?: CallOptions): Promise<unknown> {
-    return this.callToolMock(server, toolName, options);
+    return await this.callToolMock(server, toolName, options);
   }
 
   async listResources(server: string, options?: unknown): Promise<unknown> {
-    return this.listResourcesMock(server, options);
+    return await this.listResourcesMock(server, options);
   }
 
   async connect(): Promise<never> {
@@ -91,8 +91,8 @@ describe('createKeepAliveRuntime', () => {
     await keepAliveRuntime.listTools('alpha', { includeSchema: true });
     expect(daemon.listTools).toHaveBeenCalledWith({ server: 'alpha', includeSchema: true, autoAuthorize: undefined });
 
-    await keepAliveRuntime.listResources('alpha', { cursor: 1 });
-    expect(daemon.listResources).toHaveBeenCalledWith({ server: 'alpha', params: { cursor: 1 } });
+    await keepAliveRuntime.listResources('alpha', { cursor: '1' });
+    expect(daemon.listResources).toHaveBeenCalledWith({ server: 'alpha', params: { cursor: '1' } });
 
     await keepAliveRuntime.close('alpha');
     expect(daemon.closeServer).toHaveBeenCalledWith({ server: 'alpha' });

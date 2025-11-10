@@ -1,5 +1,5 @@
 import type { ChildProcess } from 'node:child_process';
-import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const execFileMock = vi.fn();
 
@@ -12,16 +12,14 @@ vi.mock('node:child_process', async () => {
 });
 
 describe('runtime-process-utils Windows process tree', () => {
-  let platformSpy: ReturnType<typeof vi.spyOn>;
-
   beforeEach(() => {
     vi.resetModules();
     execFileMock.mockReset();
-    platformSpy = vi.spyOn(process, 'platform', 'get').mockReturnValue('win32');
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('win32');
   });
 
   afterEach(() => {
-    platformSpy.mockRestore();
+    vi.restoreAllMocks();
   });
 
   it('parses PowerShell output to enumerate descendants', async () => {
@@ -33,7 +31,7 @@ describe('runtime-process-utils Windows process tree', () => {
       { ProcessId: rootPid + 3, ParentProcessId: 42 },
     ]);
 
-    execFileMock.mockImplementation((command, args, options, callback) => {
+    execFileMock.mockImplementation((command, _args, options, callback) => {
       const cb = typeof options === 'function' ? options : callback;
       if (command === 'powershell.exe') {
         cb?.(null, powershellOutput, '');

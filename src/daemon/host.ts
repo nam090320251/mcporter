@@ -1,17 +1,17 @@
-import net from 'node:net';
 import fs from 'node:fs/promises';
+import net from 'node:net';
 import path from 'node:path';
-import { createRuntime, type Runtime } from '../runtime.js';
 import type { ServerDefinition } from '../config.js';
-import { keepAliveIdleTimeout, isKeepAliveServer } from '../lifecycle.js';
-import {
-  type CallToolParams,
-  type CloseServerParams,
-  type DaemonRequest,
-  type DaemonResponse,
-  type ListResourcesParams,
-  type ListToolsParams,
-  type StatusResult,
+import { isKeepAliveServer, keepAliveIdleTimeout } from '../lifecycle.js';
+import { createRuntime, type Runtime } from '../runtime.js';
+import type {
+  CallToolParams,
+  CloseServerParams,
+  DaemonRequest,
+  DaemonResponse,
+  ListResourcesParams,
+  ListToolsParams,
+  StatusResult,
 } from './protocol.js';
 
 interface DaemonHostOptions {
@@ -160,13 +160,7 @@ async function handleSocketRequest(
   metadata: { configPath: string; socketPath: string; startedAt: number },
   shutdown: () => Promise<void>
 ): Promise<void> {
-  const { response, shouldShutdown } = await processRequest(
-    rawPayload,
-    runtime,
-    managedServers,
-    activity,
-    metadata
-  );
+  const { response, shouldShutdown } = await processRequest(rawPayload, runtime, managedServers, activity, metadata);
   socket.write(JSON.stringify(response), () => {
     socket.end(() => {
       if (shouldShutdown) {

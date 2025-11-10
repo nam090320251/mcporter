@@ -1,17 +1,15 @@
 import os from 'node:os';
 import path from 'node:path';
-import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { pathsForImport } from '../src/config-imports.js';
 
 describe('pathsForImport on Windows', () => {
-  let platformSpy: ReturnType<typeof vi.spyOn>;
-  let homeSpy: ReturnType<typeof vi.spyOn>;
   const homeDir = path.join(os.tmpdir(), 'mcporter-win-home');
   const appData = path.join(homeDir, 'AppData', 'Roaming');
 
   beforeEach(() => {
-    platformSpy = vi.spyOn(process, 'platform', 'get').mockReturnValue('win32');
-    homeSpy = vi.spyOn(os, 'homedir').mockReturnValue(homeDir);
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('win32');
+    vi.spyOn(os, 'homedir').mockReturnValue(homeDir);
     process.env.HOME = homeDir;
     process.env.USERPROFILE = homeDir;
     process.env.APPDATA = appData;
@@ -19,8 +17,7 @@ describe('pathsForImport on Windows', () => {
   });
 
   afterEach(() => {
-    platformSpy.mockRestore();
-    homeSpy.mockRestore();
+    vi.restoreAllMocks();
     delete process.env.HOME;
     delete process.env.USERPROFILE;
     delete process.env.APPDATA;

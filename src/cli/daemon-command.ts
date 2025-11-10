@@ -1,8 +1,8 @@
-import { createRuntime } from '../runtime.js';
-import { isKeepAliveServer } from '../lifecycle.js';
 import { DaemonClient, resolveDaemonPaths } from '../daemon/client.js';
-import { launchDaemonDetached } from '../daemon/launch.js';
 import { runDaemonHost } from '../daemon/host.js';
+import { launchDaemonDetached } from '../daemon/launch.js';
+import { isKeepAliveServer } from '../lifecycle.js';
+import { createRuntime } from '../runtime.js';
 
 interface DaemonCliOptions {
   readonly configPath: string;

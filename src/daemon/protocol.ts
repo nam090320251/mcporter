@@ -1,10 +1,4 @@
-export type DaemonRequestMethod =
-  | 'callTool'
-  | 'listTools'
-  | 'listResources'
-  | 'closeServer'
-  | 'status'
-  | 'stop';
+export type DaemonRequestMethod = 'callTool' | 'listTools' | 'listResources' | 'closeServer' | 'status' | 'stop';
 
 export interface DaemonRequest<T extends DaemonRequestMethod = DaemonRequestMethod, P = unknown> {
   readonly id: string;

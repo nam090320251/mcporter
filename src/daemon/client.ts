@@ -1,19 +1,18 @@
-import crypto from 'node:crypto';
+import crypto, { randomUUID } from 'node:crypto';
 import net from 'node:net';
 import path from 'node:path';
-import { randomUUID } from 'node:crypto';
-import {
-  type CallToolParams,
-  type CloseServerParams,
-  type DaemonRequest,
-  type DaemonResponse,
-  type DaemonRequestMethod,
-  type ListResourcesParams,
-  type ListToolsParams,
-  type StatusResult,
-} from './protocol.js';
-import { getDaemonMetadataPath, getDaemonSocketPath } from './paths.js';
 import { launchDaemonDetached } from './launch.js';
+import { getDaemonMetadataPath, getDaemonSocketPath } from './paths.js';
+import type {
+  CallToolParams,
+  CloseServerParams,
+  DaemonRequest,
+  DaemonRequestMethod,
+  DaemonResponse,
+  ListResourcesParams,
+  ListToolsParams,
+  StatusResult,
+} from './protocol.js';
 
 export interface DaemonClientOptions {
   readonly configPath: string;
@@ -36,14 +35,12 @@ export function resolveDaemonPaths(configPath: string): DaemonPaths {
 }
 
 export class DaemonClient {
-  private readonly configKey: string;
   private readonly socketPath: string;
   private readonly metadataPath: string;
   private startingPromise: Promise<void> | null = null;
 
   constructor(private readonly options: DaemonClientOptions) {
     const paths = resolveDaemonPaths(options.configPath);
-    this.configKey = paths.key;
     this.socketPath = paths.socketPath;
     this.metadataPath = paths.metadataPath;
   }
@@ -118,16 +115,18 @@ export class DaemonClient {
       await this.startingPromise;
       return;
     }
-    this.startingPromise = Promise.resolve().then(() => {
-      launchDaemonDetached({
-        configPath: this.options.configPath,
-        rootDir: this.options.rootDir,
-        metadataPath: this.metadataPath,
-        socketPath: this.socketPath,
+    this.startingPromise = Promise.resolve()
+      .then(() => {
+        launchDaemonDetached({
+          configPath: this.options.configPath,
+          rootDir: this.options.rootDir,
+          metadataPath: this.metadataPath,
+          socketPath: this.socketPath,
+        });
+      })
+      .finally(() => {
+        this.startingPromise = null;
       });
-    }).finally(() => {
-      this.startingPromise = null;
-    });
     await this.startingPromise;
   }
 
@@ -207,7 +206,7 @@ export class DaemonClient {
     let parsed: DaemonResponse<T>;
     try {
       parsed = JSON.parse(trimmed) as DaemonResponse<T>;
-    } catch (error) {
+    } catch {
       const parseError = new Error('Failed to parse daemon response.');
       (parseError as NodeJS.ErrnoException).code = 'ECONNRESET';
       throw parseError;

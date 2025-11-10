@@ -20,13 +20,13 @@ import { getActiveLogger, getActiveLogLevel, logError, logInfo, logWarn, setLogL
 import { consumeOutputFormat } from './cli/output-format.js';
 import { DEBUG_HANG, dumpActiveHandles, terminateChildProcesses } from './cli/runtime-debug.js';
 import { boldText, dimText, extraDimText, supportsAnsiColor } from './cli/terminal.js';
-import { analyzeConnectionError } from './error-classifier.js';
-import { parseLogLevel } from './logging.js';
 import { resolveConfigPath } from './config.js';
-import { createRuntime, MCPORTER_VERSION } from './runtime.js';
 import { DaemonClient } from './daemon/client.js';
 import { createKeepAliveRuntime } from './daemon/runtime-wrapper.js';
+import { analyzeConnectionError } from './error-classifier.js';
 import { isKeepAliveServer } from './lifecycle.js';
+import { parseLogLevel } from './logging.js';
+import { createRuntime, MCPORTER_VERSION } from './runtime.js';
 
 export { parseCallArguments } from './cli/call-arguments.js';
 export { handleCall } from './cli/call-command.js';
@@ -142,9 +142,7 @@ export async function runCli(argv: string[]): Promise<void> {
       .map((entry) => entry.name)
   );
   const daemonClient =
-    keepAliveServers.size > 0
-      ? new DaemonClient({ configPath: configResolution.path, rootDir: rootOverride })
-      : null;
+    keepAliveServers.size > 0 ? new DaemonClient({ configPath: configResolution.path, rootDir: rootOverride }) : null;
   const runtime = createKeepAliveRuntime(baseRuntime, { daemonClient, keepAliveServers });
 
   const inference = inferCommandRouting(command, args, runtime.getDefinitions());
