@@ -2,7 +2,8 @@
 
 ## [Unreleased]
 
-_No changes yet._
+### Docs
+- Consolidated the external MCP import matrix into `docs/import.md`, removing the short-lived `docs/mcp-import.md` duplication.
 
 ## [0.4.3] - 2025-11-10
 
