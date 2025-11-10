@@ -360,6 +360,23 @@ What MCPorter handles for you:
 
 Provide `configPath` or `rootDir` to CLI/runtime calls when you juggle multiple config files side by side.
 
+#### Config resolution order & system-level configs
+
+mcporter reads exactly one primary config per run. The lookup order is:
+
+1. The path you pass via `--config` (or programmatic `configPath`).
+2. The `MCPORTER_CONFIG` environment variable (set it in your shell to apply everywhere).
+3. `<root>/config/mcporter.json` inside the current project.
+4. `~/.mcporter/mcporter.json` or `~/.mcporter/mcporter.jsonc` if the project file is missing.
+
+All `mcporter config …` mutations write back to whichever file was selected by that order. To manage a system-wide config explicitly, point the CLI at it:
+
+```bash
+mcporter config --config ~/.mcporter/mcporter.json add global-server https://api.example.com/mcp
+```
+
+Set `MCPORTER_CONFIG=~/.mcporter/mcporter.json` in your shell profile when you want that file to be the default everywhere (handy for `npx mcporter …` runs).
+
 ## Testing and CI
 
 | Command | Purpose |

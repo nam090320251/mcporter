@@ -1,4 +1,6 @@
 import fs from 'node:fs/promises';
+import fsSync from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { pathsForImport, readExternalEntries } from './config-imports.js';
 import { normalizeServerEntry } from './config-normalize.js';
@@ -101,7 +103,20 @@ export function resolveConfigPath(
   if (configPath) {
     return { path: path.resolve(configPath), explicit: true };
   }
-  return { path: path.resolve(rootDir, 'config', 'mcporter.json'), explicit: false };
+  const envConfig = process.env.MCPORTER_CONFIG;
+  if (envConfig && envConfig.trim().length > 0) {
+    return { path: path.resolve(expandHome(envConfig.trim())), explicit: true };
+  }
+  const projectPath = path.resolve(rootDir, 'config', 'mcporter.json');
+  if (pathExists(projectPath)) {
+    return { path: projectPath, explicit: false };
+  }
+  const homeCandidates = homeConfigCandidates();
+  const existingHome = homeCandidates.find((candidate) => pathExists(candidate));
+  if (existingHome) {
+    return { path: existingHome, explicit: false };
+  }
+  return { path: projectPath, explicit: false };
 }
 
 async function readConfigFile(configPath: string, explicit: boolean): Promise<RawConfig> {
@@ -118,4 +133,19 @@ async function readConfigFile(configPath: string, explicit: boolean): Promise<Ra
 
 function isErrno(error: unknown, code: string): error is NodeJS.ErrnoException {
   return Boolean(error && typeof error === 'object' && (error as NodeJS.ErrnoException).code === code);
+}
+
+function pathExists(filePath: string): boolean {
+  try {
+    fsSync.accessSync(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function homeConfigCandidates(): string[] {
+  const homeDir = os.homedir();
+  const base = path.join(homeDir, '.mcporter');
+  return [path.join(base, 'mcporter.json'), path.join(base, 'mcporter.jsonc')];
 }

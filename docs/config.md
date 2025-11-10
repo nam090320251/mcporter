@@ -49,6 +49,17 @@ mcporter keeps three configuration buckets in sync: repository-scoped JSON (`con
 3. Use `mcporter config add shadcn https://www.shadcn.io/api/mcp` to persist another server without editing JSON.
 4. Authenticate any OAuth-backed server with either `mcporter auth <name>` or `mcporter config login <name>`; tokens land under `~/.mcporter/<name>/` unless you override `tokenCacheDir`.
 
+## Config Resolution Order
+
+mcporter always loads exactly one primary config file per run. The search order is:
+
+1. The path passed via `--config <file>` (or programmatic `configPath`).
+2. The `MCPORTER_CONFIG` environment variable (handy for shell-wide defaults).
+3. `<root>/config/mcporter.json` inside the current project, if it exists.
+4. `~/.mcporter/mcporter.json` or `~/.mcporter/mcporter.jsonc` when the project file is missing.
+
+All `mcporter config …` mutations write back to whichever file was selected. To maintain a system-wide config explicitly, run commands like `mcporter config --config ~/.mcporter/mcporter.json add <name> …`, or set `MCPORTER_CONFIG` in your shell profile so the CLI always targets that home-level file unless you override it.
+
 ## Discovery & Precedence
 mcporter builds a merged view of all known servers before executing any command. The sources load in this order:
 
