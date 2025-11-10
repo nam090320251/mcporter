@@ -3,7 +3,7 @@
 ## [Unreleased]
 
 ### CLI & runtime
-- _Nothing yet._
+- Fixed Claude imports so `mcporter list` merges project-scoped servers from `.claude.json` (matching the current workspace) and ignores metadata-only keys like `tipsHistory`/`cachedStatsigGates`, resolving GitHub issues #6 and #7.
 
 ## [0.5.2] - 2025-11-10
 

@@ -210,6 +210,68 @@ describe('config imports', () => {
     }
   });
 
+  it('loads Claude project-scoped servers without treating metadata as servers', async () => {
+    const homeDir = ensureFakeHomeDir();
+    const claudeDir = path.join(homeDir, '.claude');
+    fs.rmSync(claudeDir, { recursive: true, force: true });
+    const claudeJsonPath = path.join(homeDir, '.claude.json');
+    const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'mcporter-claude-project-'));
+    const projectConfigDir = path.join(projectRoot, 'config');
+    fs.mkdirSync(projectConfigDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(projectConfigDir, 'mcporter.json'),
+      JSON.stringify({
+        mcpServers: {},
+        imports: ['claude-code'],
+      })
+    );
+    fs.writeFileSync(
+      claudeJsonPath,
+      JSON.stringify(
+        {
+          tipsHistory: { foo: 1 },
+          cachedStatsigGates: { example: false },
+          projects: {
+            [projectRoot]: {
+              mcpServers: {
+                'project-only': {
+                  baseUrl: 'https://project.local/mcp',
+                },
+              },
+            },
+            '/other/project': {
+              mcpServers: {
+                ignored: { command: 'echo' },
+              },
+            },
+          },
+        },
+        null,
+        2
+      )
+    );
+
+    try {
+      const servers = await loadServerDefinitions({ rootDir: projectRoot });
+      const projectServer = servers.find((server) => server.name === 'project-only');
+      expect(projectServer).toBeDefined();
+      expect(projectServer?.command.kind).toBe('http');
+      expect(projectServer?.command.kind === 'http' ? projectServer.command.url.toString() : undefined).toBe(
+        'https://project.local/mcp'
+      );
+      expect(projectServer?.source).toEqual({
+        kind: 'import',
+        path: claudeJsonPath,
+      });
+      const serverNames = servers.map((server) => server.name);
+      expect(serverNames).not.toContain('tipsHistory');
+      expect(serverNames).not.toContain('cachedStatsigGates');
+      expect(serverNames).not.toContain('ignored');
+    } finally {
+      fs.rmSync(projectRoot, { recursive: true, force: true });
+    }
+  });
+
   it('loads Codex servers from the user config when the project lacks a .codex directory', async () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'mcporter-imports-'));
     try {

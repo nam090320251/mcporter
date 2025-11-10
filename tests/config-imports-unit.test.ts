@@ -112,6 +112,59 @@ describe('config import helpers', () => {
     ]);
   });
 
+  it('includes Claude project-scoped servers that match the root directory', async () => {
+    await fs.mkdir(TEMP_DIR, { recursive: true });
+    const jsonPath = path.join(TEMP_DIR, 'claude-project.json');
+    const projectRoot = path.join(TEMP_DIR, 'workspace');
+    await fs.writeFile(
+      jsonPath,
+      JSON.stringify({
+        projects: {
+          [projectRoot]: {
+            mcpServers: {
+              repo: {
+                command: 'node --version',
+                args: ['--verbose'],
+              },
+            },
+          },
+          '/other/project': {
+            mcpServers: {
+              ignored: { command: 'echo' },
+            },
+          },
+        },
+        tipsHistory: { foo: 1 },
+      }),
+      'utf8'
+    );
+    const entries = await readExternalEntries(jsonPath, projectRoot);
+    expect(entries?.size).toBe(1);
+    const repo = entries?.get('repo');
+    expect(repo?.command).toBe('node --version');
+    expect(repo?.args).toEqual(['--verbose']);
+  });
+
+  it('ignores non-server keys in Claude configs without user mcpServers', async () => {
+    await fs.mkdir(TEMP_DIR, { recursive: true });
+    const jsonPath = path.join(TEMP_DIR, 'claude-empty.json');
+    await fs.writeFile(
+      jsonPath,
+      JSON.stringify({
+        cachedStatsigGates: { example: true },
+        tipsHistory: { foo: 1 },
+        projects: {
+          '/no/match': {
+            mcpServers: {},
+          },
+        },
+      }),
+      'utf8'
+    );
+    const entries = await readExternalEntries(jsonPath, path.join(TEMP_DIR, 'workspace'));
+    expect(entries?.size ?? 0).toBe(0);
+  });
+
   it('generates cursor import paths relative to project root and user config dir', () => {
     previousAppData = process.env.APPDATA;
     previousXdg = process.env.XDG_CONFIG_HOME;

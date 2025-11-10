@@ -47,7 +47,7 @@ export async function loadServerDefinitions(options: LoadConfigOptions = {}): Pr
     const candidates = pathsForImport(importKind, rootDir);
     for (const candidate of candidates) {
       const resolved = expandHome(candidate);
-      const entries = await readExternalEntries(resolved);
+      const entries = await readExternalEntries(resolved, rootDir);
       if (!entries) {
         continue;
       }

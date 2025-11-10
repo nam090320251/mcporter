@@ -40,7 +40,10 @@ export function pathsForImport(kind: ImportKind, rootDir: string): string[] {
   }
 }
 
-export async function readExternalEntries(filePath: string): Promise<Map<string, RawEntry> | null> {
+export async function readExternalEntries(
+  filePath: string,
+  projectRoot?: string
+): Promise<Map<string, RawEntry> | null> {
   if (!(await fileExists(filePath))) {
     return null;
   }
@@ -57,7 +60,7 @@ export async function readExternalEntries(filePath: string): Promise<Map<string,
     }
 
     const parsed = parseJsonBuffer(buffer);
-    return extractFromMcpJson(parsed);
+    return extractFromMcpJson(parsed, projectRoot);
   } catch (error) {
     if (shouldIgnoreParseError(error)) {
       return new Map<string, RawEntry>();
@@ -70,32 +73,36 @@ export function toFileUrl(filePath: string): URL {
   return pathToFileURL(filePath);
 }
 
-function extractFromMcpJson(raw: unknown): Map<string, RawEntry> {
+function extractFromMcpJson(raw: unknown, projectRoot?: string): Map<string, RawEntry> {
   const map = new Map<string, RawEntry>();
-  if (!raw || typeof raw !== 'object') {
+  if (!isRecord(raw)) {
     return map;
   }
 
-  const container = (() => {
-    if ('mcpServers' in raw && raw.mcpServers && typeof raw.mcpServers === 'object') {
-      return raw.mcpServers as Record<string, unknown>;
-    }
-    if ('servers' in raw && raw.servers && typeof raw.servers === 'object') {
-      return raw.servers as Record<string, unknown>;
-    }
-    if ('mcp' in raw && raw.mcp && typeof raw.mcp === 'object') {
-      return raw.mcp as Record<string, unknown>;
-    }
-    return raw as Record<string, unknown>;
-  })();
+  const containers: Record<string, unknown>[] = [];
+  if (isRecord(raw.mcpServers)) {
+    containers.push(raw.mcpServers);
+  }
+  if (isRecord(raw.servers)) {
+    containers.push(raw.servers);
+  }
+  if (isRecord(raw.mcp)) {
+    containers.push(raw.mcp);
+  }
+  if (containers.length === 0) {
+    containers.push(raw);
+  }
 
-  for (const [name, value] of Object.entries(container)) {
-    if (!value || typeof value !== 'object') {
-      continue;
-    }
-    const entry = convertExternalEntry(value as Record<string, unknown>);
-    if (entry) {
-      map.set(name, entry);
+  for (const container of containers) {
+    addEntriesFromContainer(container, map);
+  }
+
+  if (projectRoot) {
+    const projectEntries = extractClaudeProjectEntries(raw, projectRoot);
+    for (const [name, entry] of projectEntries) {
+      if (!map.has(name)) {
+        map.set(name, entry);
+      }
     }
   }
 
@@ -200,6 +207,72 @@ function buildExternalHeaders(record: Record<string, unknown>): Record<string, s
   }
 
   return Object.keys(headers).length > 0 ? headers : undefined;
+}
+
+function extractClaudeProjectEntries(raw: Record<string, unknown>, projectRoot: string): Map<string, RawEntry> {
+  const map = new Map<string, RawEntry>();
+  if (!isRecord(raw.projects)) {
+    return map;
+  }
+  const projects = raw.projects as Record<string, unknown>;
+  const targetPath = normalizeProjectPath(projectRoot);
+  for (const [projectKey, value] of Object.entries(projects)) {
+    if (!isRecord(value) || !isRecord(value.mcpServers)) {
+      continue;
+    }
+    const normalizedKey = normalizeProjectPath(projectKey);
+    if (!pathsEqual(normalizedKey, targetPath)) {
+      continue;
+    }
+    addEntriesFromContainer(value.mcpServers as Record<string, unknown>, map);
+  }
+  return map;
+}
+
+function addEntriesFromContainer(container: Record<string, unknown>, target: Map<string, RawEntry>): void {
+  for (const [name, value] of Object.entries(container)) {
+    if (!isRecord(value)) {
+      continue;
+    }
+    if (target.has(name)) {
+      continue;
+    }
+    const entry = convertExternalEntry(value);
+    if (entry) {
+      target.set(name, entry);
+    }
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function normalizeProjectPath(input: string): string {
+  if (!input || typeof input !== 'string') {
+    return '';
+  }
+  return path.resolve(expandHomeShortcut(input));
+}
+
+function expandHomeShortcut(input: string): string {
+  if (input === '~') {
+    return os.homedir();
+  }
+  if (input.startsWith('~/') || input.startsWith('~\\')) {
+    return path.join(os.homedir(), input.slice(2));
+  }
+  return input;
+}
+
+function pathsEqual(a: string, b: string): boolean {
+  if (!a || !b) {
+    return false;
+  }
+  if (process.platform === 'win32') {
+    return a.toLowerCase() === b.toLowerCase();
+  }
+  return a === b;
 }
 
 function defaultCursorUserConfigPaths(): string[] {
