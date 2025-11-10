@@ -11,7 +11,7 @@ _No changes yet._
 - Claude Code imports now honor `.claude/settings.local.json` and `.claude/settings.json` ahead of the legacy `mcp.json`, and we skip entries that lack a URL/command (e.g., permissions blocks) so malformed settings no longer break the merge.
 
 ### Docs
-- Documented the full import matrix (including OpenCode + Claude settings hierarchy) in `docs/mcp-import.md`, `docs/import.md`, and `docs/config.md`.
+- Documented the full import matrix (including OpenCode + Claude settings hierarchy) directly in `docs/import.md` and `docs/config.md`.
 
 ## [0.4.2] - 2025-11-09
 
