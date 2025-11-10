@@ -34,5 +34,7 @@ After the release is live, always update the Homebrew tap and re-verify both ins
     ```bash
     brew update
     brew install steipete/tap/mcporter
+    # If you previously installed mcporter via npm (or another tap) and see a link error,
+    # run `brew link --overwrite mcporter` to replace /opt/homebrew/bin/mcporter with the tap binary.
     mcporter list --help
     ```
