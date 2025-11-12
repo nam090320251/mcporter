@@ -117,6 +117,15 @@ async function maybeDescribeServer(
   tool: string,
   outputFormat: OutputFormat
 ): Promise<boolean> {
+  if (tool === 'list_tools') {
+    console.log(dimText(`[mcporter] ${server}.list_tools is a shortcut for 'mcporter list ${server}'.`));
+    const listArgs = [server];
+    if (outputFormat === 'json') {
+      listArgs.push('--json');
+    }
+    await handleList(runtime, listArgs);
+    return true;
+  }
   if (tool !== 'help') {
     return false;
   }

@@ -206,6 +206,29 @@ describe('CLI call execution behavior', () => {
       logSpy.mockRestore();
     }
   });
+
+  it('treats list_tools selector as a shortcut for mcporter list', async () => {
+    const listModule = await import('../src/cli/list-command.js');
+    const listSpy = vi.spyOn(listModule, 'handleList').mockResolvedValue(undefined);
+    const { handleCall } = await cliModulePromise;
+    const definition: ServerDefinition = {
+      name: 'chrome-devtools',
+      description: 'Chrome DevTools MCP server',
+      command: { kind: 'stdio', command: 'chrome-devtools', args: [], cwd: process.cwd() },
+      source: { kind: 'local', path: '<test>' },
+    };
+    const { runtime, callTool } = createRuntimeStub({ 'chrome-devtools': [] }, { definitions: [definition] });
+
+    try {
+      await handleCall(runtime, ['chrome-devtools.list_tools']);
+      await handleCall(runtime, ['chrome-devtools.list_tools', '--output', 'json']);
+      expect(listSpy).toHaveBeenNthCalledWith(1, runtime, ['chrome-devtools']);
+      expect(listSpy).toHaveBeenNthCalledWith(2, runtime, ['chrome-devtools', '--json']);
+      expect(callTool).not.toHaveBeenCalled();
+    } finally {
+      listSpy.mockRestore();
+    }
+  });
 });
 
 function createRuntimeStub(

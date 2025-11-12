@@ -5,6 +5,9 @@
 ### CLI & runtime
 - _Nothing yet._
 
+### CLI
+- Added `list_tools` as a hidden shortcut for `mcporter list <server>`, so `chrome-devtools.list_tools` (and similar selectors) print the tool catalog instantly without requiring a real MCP tool.
+
 ## [0.5.6] - 2025-11-11
 
 ### CLI & runtime
