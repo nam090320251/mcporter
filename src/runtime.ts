@@ -17,8 +17,14 @@ import { closeTransportAndWait } from './runtime-process-utils.js';
 import './sdk-patches.js';
 
 const PACKAGE_NAME = 'mcporter';
-// Keep version in one place by reading package.json via require (Node ESM-friendly without assertions).
-const CLIENT_VERSION = createRequire(import.meta.url)('../package.json').version;
+// Keep version in one place by reading package.json; fall back gracefully when bundled without it (e.g., bun bundle).
+const CLIENT_VERSION = (() => {
+  try {
+    return createRequire(import.meta.url)('../package.json').version as string;
+  } catch {
+    return process.env.MCPORTER_VERSION ?? '0.0.0-dev';
+  }
+})();
 const DEFAULT_OAUTH_CODE_TIMEOUT_MS = 60_000;
 const OAUTH_CODE_TIMEOUT_MS = parseOAuthTimeout(
   process.env.MCPORTER_OAUTH_TIMEOUT_MS ?? process.env.MCPORTER_OAUTH_TIMEOUT
